@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/cetceeve/SparkLing#readme",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "kafkajs": "^2.2.4"
   }
 }
