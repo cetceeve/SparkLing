@@ -3,6 +3,7 @@ from kafka import KafkaProducer
 from time import sleep
 from datetime import datetime
 import requests
+import json
 
 while True:
     sleep(1)
@@ -10,7 +11,7 @@ while True:
 
         producer = KafkaProducer(
             bootstrap_servers=["kafka:9092"],
-            # value_serializer=str.encode,
+            value_serializer=json.dumps,
         )
         last_update_timestamp = datetime.now()
 
