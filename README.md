@@ -19,4 +19,7 @@ curl -X 'GET' 'https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePosition
 # to inspect the static data:
 gtfsutils info static.gtfs.gz
 unzip static.gtfs.gz
+
+# to read the realtime data, first compile the protobuf definition, then use the python script or similar:
+protoc -I proto/ --python_out=proto/ proto/gtfs-realtime.proto
 ```
