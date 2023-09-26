@@ -7,3 +7,10 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 //     maxZoom: 19,
 // }).addTo(map);
 let marker = L.marker([59.35008532389274, 18.070244623562843]).addTo(map);
+
+const evtSource = new EventSource(window.location.origin + "/realtime");
+
+evtSource.onmessage = (event) => {
+    console.log(event)
+};
+  
