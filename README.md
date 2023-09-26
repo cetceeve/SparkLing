@@ -3,6 +3,7 @@
 ## Notes
 - we can try to use this kafka-connect plugin to pull data from the APIs: [kafka-connect-rest](https://github.com/llofberg/kafka-connect-rest)
 - we can probably use [leaflet.marker.slideto](https://www.npmjs.com/package/leaflet.marker.slideto) for marker animations
+- pyspark natively [integrates](https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html) with kafka
 
 All the data comes in gtfs format.
 For static data, this is a gzip compressed collection of csv file (I think?).
