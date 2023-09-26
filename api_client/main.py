@@ -29,32 +29,32 @@ while True:
             )
             last_update_timestamp = now
 
-            producer.send(topic="realtime", key="ul", value=resp.content)
+            # producer.send(topic="realtime", key="ul", value=resp.content)
 
-            # feed_msg = FeedMessage()
-            # feed_msg.ParseFromString(resp.content)
+            feed_msg = FeedMessage()
+            feed_msg.ParseFromString(resp.content)
 
 
-            # for entity in feed_msg.entity:
-            #     key = entity.id
-            #     value = {
-            #         "vehicle_id": entity.vehicle.vehicle.id,
-            #         "position": {
-            #             "lat": entity.vehicle.position.latitude,
-            #             "long": entity.vehicle.position.longitude,
-            #             "bearing": entity.vehicle.position.bearing,
-            #             "speed": entity.vehicle.position.speed,
-            #         }
-            #     }
-            #     timestamp_ms = entity.vehicle.timestamp * 1000
-            #     print(f"key: {key}")
-            #     print(f"value: {value}")
-            #     print(f"ts: {timestamp_ms}")
-                # producer.send(
-                #     topic="realtime",
-                #     key=key,
-                #     value=value,
-                #     timestamp_ms=timestamp_ms
-                # )
+            for entity in feed_msg.entity:
+                # key = entity.id
+                value = {
+                    "vehicle_id": entity.vehicle.vehicle.id,
+                    "position": {
+                        "lat": entity.vehicle.position.latitude,
+                        "long": entity.vehicle.position.longitude,
+                        "bearing": entity.vehicle.position.bearing,
+                        "speed": entity.vehicle.position.speed,
+                    }
+                }
+                timestamp_ms = entity.vehicle.timestamp * 1000
+                # print(f"key: {ul}")
+                # print(f"value: {value}")
+                # print(f"ts: {timestamp_ms}")
+                producer.send(
+                    topic="realtime",
+                    key="ul",
+                    value=value,
+                    timestamp_ms=timestamp_ms
+                )
     except Exception as e:
         print(e)
