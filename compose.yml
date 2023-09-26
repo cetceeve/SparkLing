@@ -36,6 +36,7 @@ services:
       - "80:8080"
     networks:
       - sparkling-bridge
+    restart: on-failure
   
 
   # spark:
