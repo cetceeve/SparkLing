@@ -12,10 +12,10 @@ For realtime data, this is a (also compressed?) protobuf message.
 ## Curl commands
 ```
 # static
-curl -X 'GET' 'https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip?key=f620df859fb141f39e0bbc3f1abad609' -H 'accept: application/octet-stream' -H 'Accept-encoding: gzip' -H 'If-Modified-Since: Mon, 13 Jul 2020 04:24:36 GMT' -H 'If-None-Match: "bfc13a64729c4290ef5b2c2730249c88ca92d82d"' -o static.gtfs.gz
+curl -X 'GET' 'https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip?key=<key>' -H 'accept: application/octet-stream' -H 'Accept-encoding: gzip' -H 'If-Modified-Since: Mon, 13 Jul 2020 04:24:36 GMT' -H 'If-None-Match: "bfc13a64729c4290ef5b2c2730249c88ca92d82d"' -o static.gtfs.gz
 
 # realtime vehicle positions
-curl -X 'GET' 'https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePositionsSweden.pb?key=92fccb7fca894b499bce18d23faa9d94' -H'accept: application/octet-stream' -H 'Accept-encoding: gzip' -H 'If-Modified-Since: Mon, 13 Jul 2020 04:24:36 GMT' -H 'If-None-Match: "bfc13a64729c4290ef5b2c2730249c88ca92d82d"' -o realtime.gtfs.gz
+curl -X 'GET' 'https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePositionsSweden.pb?key=<key>' -H'accept: application/octet-stream' -H 'Accept-encoding: gzip' -H 'If-Modified-Since: Mon, 13 Jul 2020 04:24:36 GMT' -H 'If-None-Match: "bfc13a64729c4290ef5b2c2730249c88ca92d82d"' -o realtime.gtfs.gz
 
 # to inspect the static data:
 gtfsutils info static.gtfs.gz
