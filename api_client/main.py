@@ -5,6 +5,7 @@ from datetime import datetime
 import requests
 import json
 import sys
+import os
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -22,14 +23,14 @@ while True:
 
     now = datetime.now()
     resp = requests.get(
-        "https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePositionsSweden.pb?key=92fccb7fca894b499bce18d23faa9d94",
+        f"https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePositionsSweden.pb?key={os.getenv('TRAFIKLAB_REALTIME_KEY')}",
         headers={
             "accept": "application/octet-stream",
             "Accept-encoding": "gzip",
             "If-Modified-Since": f"{last_update_timestamp}",
             "If-None-Match": "bfc13a64729c4290ef5b2c2730249c88ca92d82d",
         }
-)
+    )
     last_update_timestamp = now
 
     # producer.send(topic="realtime", key="ul", value=resp.content)
