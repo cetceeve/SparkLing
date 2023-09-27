@@ -22,7 +22,7 @@ app.get('/realtime', async (req, res) => {
 
   // connect to consumer and subscribe to topic
   await consumer.connect();
-  await consumer.subscribe({topic: "realtime", fromBeginning: false});
+  await consumer.subscribe({topic: "realtime2", fromBeginning: false});
   // stream updates to client
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
