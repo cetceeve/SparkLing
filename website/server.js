@@ -27,7 +27,7 @@ app.get('/realtime', async (req, res) => {
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       // console.log("message recieved: " + message.value.toString())
-      res.write('data: '+ message.value.toString() + '\n\n')
+      res.write('data: '+ message.value.toString() + '\n\n')                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
     },
   })
 
