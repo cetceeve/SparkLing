@@ -19,5 +19,9 @@
   "dependencies": {
     "express": "^4.18.2",
     "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "leaflet": "^1.9.4",
+    "leaflet.marker.slideto": "^0.3.0"
   }
 }
