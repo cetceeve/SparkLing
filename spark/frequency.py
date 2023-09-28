@@ -58,11 +58,12 @@ json_df = input_df.select(
 #     .withColumn("time_delta", prev_time_df["timestamp"] - prev_time_df["prev_timestamp"])
 
 # writing a data stream to kafka
-ds = json_df \
+output_df = json_df \
     .select(
-        F.col("key").cast("string"),
-        F.to_json(F.col("value")).cast("string"),
-    ) \
+        F.col("key").cast("string").alias("key"),
+        F.to_json(F.col("value")).cast("string").alias("value"),
+    )
+ds = output_df \
     .writeStream \
     .format("kafka") \
     .option("checkPointLocation", "/tmp/spark/frequency/checkpoint") \
