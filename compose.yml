@@ -22,6 +22,8 @@ services:
   api-client:
     image: jonathanarns/sparkling-api-client
     build: ./api_client
+    secrets:
+       - trafiklab_GTFS_RT
     depends_on:
       - kafka
     networks:
@@ -40,53 +42,59 @@ services:
       - sparkling-bridge
     restart: on-failure
   
-  spark:
-    image: docker.io/bitnami/spark:3.5
-    environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-      - SPARK_USER=spark
-    ports:
-      - '8080:8080'
-      - '7077:7077'
-    networks:
-      - sparkling-bridge
+  # spark:
+  #   image: docker.io/bitnami/spark:3.5
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #     - SPARK_USER=spark
+  #   ports:
+  #     - '8080:8080'
+  #     - '7077:7077'
+  #   networks:
+  #     - sparkling-bridge
 
-  spark-worker:
-    image: docker.io/bitnami/spark:3.5
-    deploy:
-      mode: replicated
-      replicas: 1
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-      - SPARK_USER=spark
-    networks:
-      - sparkling-bridge
+  # spark-worker:
+  #   image: docker.io/bitnami/spark:3.5
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark:7077
+  #     - SPARK_WORKER_MEMORY=1G
+  #     - SPARK_WORKER_CORES=1
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #     - SPARK_USER=spark
+  #   networks:
+  #     - sparkling-bridge
 
-  spark-client:
-    image: jonathanarns/sparkling-spark-client
-    build: ./spark
-    networks:
-      - sparkling-bridge
-    command: spark-submit --master spark://spark:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 ./frequency.py
-    restart: on-failure
-    depends_on:
-      - spark
-      - kafka
+  # spark-client:
+  #   image: jonathanarns/sparkling-spark-client
+  #   build: ./spark
+  #   networks:
+  #     - sparkling-bridge
+  #   command: spark-submit --master spark://spark:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 ./frequency.py
+  #   restart: on-failure
+  #   depends_on:
+  #     - spark
+  #     - kafka
 
 networks:
   sparkling-bridge:
     driver: bridge
+
+secrets:
+  trafiklab_GTFS_RT:
+    file: ./.secrets/trafiklab_GTFS_RT.txt
+  trafiklab_GTFS_static:
+    file: ./.secrets/trafiklab_GTFS_static.txt
 
 # volumes:
 #   kafka_data:
