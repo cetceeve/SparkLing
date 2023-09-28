@@ -10,8 +10,7 @@ import os
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
-with open("/run/secrets/trafiklab_GTFS_RT") as f:
-    TRAFIKLAB_REALTIME_KEY = f.read()
+TRAFIKLAB_GTFS_RT_KEY = os.getenv("TRAFIKLAB_GTFS_RT_KEY")
 
 sleep(2)
 producer = KafkaProducer(
@@ -26,7 +25,7 @@ while True:
 
     now = datetime.now()
     resp = requests.get(
-        f"https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePositionsSweden.pb?key={TRAFIKLAB_REALTIME_KEY}",
+        f"https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePositionsSweden.pb?key={TRAFIKLAB_GTFS_RT_KEY}",
         headers={
             "accept": "application/octet-stream",
             "Accept-encoding": "gzip",
