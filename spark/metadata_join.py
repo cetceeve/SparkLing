@@ -94,6 +94,7 @@ ds = joinDf.writeStream \
     .option("truncate", false) \
     .option("checkpointLocation", "/path/to/sparkCheckpoint") \
     .start()
+# TODO: add kafka sink
 
 # Within that Rate Stream have a `foreachBatch` sink that calls refresher method
 static_refresh_stream.writeStream \
