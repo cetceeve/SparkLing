@@ -2,8 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, LongType
 from pyspark.sql.window import Window
 import pyspark.sql.functions as F
-import json
-
+import pandas as pd
 from io import BytesIO
 from zipfile import ZipFile
 from urllib.request import urlopen
@@ -77,21 +76,30 @@ static_refresh_stream = spark.readStream \
 
 # Read actual streaming data and perform join operation with static Dataframe
 # As an example I used Kafka as a streaming source
-# TODO: load streaming realtime df
+RT_SCHEMA = StructType() \
+    .add(StructField("vehicle_id", StringType())) \
+    .add(StructField("trip_id", StringType())) \
+    .add(StructField("latitude", DoubleType())) \
+    .add(StructField("longitude", DoubleType())) \
+    .add(StructField("bearing", DoubleType())) \
+    .add(StructField("speed", DoubleType())) \
+
 streaming_df = spark \
     .readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:9092") \
     .option("subscribe", "realtime") \
-    .load()
-
-# TODO: parse realtime data into columns
+    .load() \
+    .withColumn("value", F.col("value").cast("STRING")) \
+    .withColumn("value", F.regexp_replace("value", "\"", "")) \
+    .withColumn("csv", F.from_csv(F.col("value"), RT_SCHEMA.simpleString())) \
+    .select("key", "csv.*", "timestamp")
 
 join_df = streaming_df.join(STATIC_DF, on="trip_id", how="left_outer")
 
-ds = joinDf.writeStream \
+ds = join_df.writeStream \
     .format("console") \
-    .option("truncate", false) \
+    .option("truncate", False) \
     .option("checkpointLocation", "/path/to/sparkCheckpoint") \
     .start()
 # TODO: add kafka sink
