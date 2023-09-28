@@ -23,4 +23,37 @@ unzip static.gtfs.gz
 
 # to read the realtime data, first compile the protobuf definition, then use the python script or similar:
 protoc -I proto/ --python_out=proto/ proto/gtfs-realtime.proto
+
+
+
+```
+For future refrence:
+Entities in the trip update dataset
+```
+entity {
+  id: "33010501569051078"
+  trip_update {
+    trip {
+      trip_id: "33010000189513002"
+      start_date: "20230928"
+      schedule_relationship: SCHEDULED
+    }
+    vehicle {
+      id: "9031003002600044"
+    }
+    stop_time_update {
+      stop_sequence: 1
+      stop_id: "9022050004324003"
+      arrival {
+        delay: -120
+        time: 1695903300
+        uncertainty: 0
+      }
+      departure {
+        delay: 0
+        time: 1695903420
+      }
+    }
+    stop_time_update {
+      stop_sequence: 2
 ```

@@ -21,8 +21,6 @@ last_update_timestamp = datetime.now()
 eprint("bootstraping complete")
 
 while True:
-    sleep(3)
-
     now = datetime.now()
     resp = requests.get(
         f"https://opendata.samtrafiken.se/gtfs-rt-sweden/ul/VehiclePositionsSweden.pb?key={TRAFIKLAB_GTFS_RT_KEY}",
@@ -35,23 +33,23 @@ while True:
     )
     last_update_timestamp = now
 
-    # producer.send(topic="realtime", key="ul", value=resp.content)
-
     feed_msg = FeedMessage()
     feed_msg.ParseFromString(resp.content)
 
 
     for entity in feed_msg.entity:
         # key = entity.id
-        value = {
-            "vehicle_id": entity.vehicle.vehicle.id,
-            "position": {
-                "lat": entity.vehicle.position.latitude,
-                "long": entity.vehicle.position.longitude,
-                "bearing": entity.vehicle.position.bearing,
-                "speed": entity.vehicle.position.speed,
-            }
-        }
+        # value = {
+        #     "vehicle_id": entity.vehicle.vehicle.id,
+        #     "trip_id": entity.vehicle.trip.trip_id,
+        #     "position": {
+        #         "lat": entity.vehicle.position.latitude,
+        #         "long": entity.vehicle.position.longitude,
+        #         "bearing": entity.vehicle.position.bearing,
+        #         "speed": entity.vehicle.position.speed,
+        #     }
+        # }
+        value = f"{entity.vehicle.vehicle.id},{entity.vehicle.trip.trip_id},{entity.vehicle.position.latitude},{entity.vehicle.position.longitude},{entity.vehicle.position.bearing},{entity.vehicle.position.speed}"
         timestamp_ms = entity.vehicle.timestamp * 1000
         # print(f"key: {ul}")
         # print(f"value: {value}")
@@ -59,6 +57,8 @@ while True:
         producer.send(
             topic="realtime",
             value=value,
-            # key="ul",
+            # key=value["trip_id"],
             timestamp_ms=timestamp_ms
         )
+    # don't request more often than api can serve
+    sleep(3)
