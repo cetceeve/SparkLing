@@ -8,7 +8,7 @@
 //             }
 //         }
 const Vehicle =  L.Circle.extend({
-    initialize: function(data, options = { radius: 50 }) {
+    initialize: function(data, options = { radius: 10 }) {
         L.Circle.prototype.initialize.call(this, [data.position.lat, data.position.long]) 
         L.setOptions(this, options);
         this.id = data.vehicle_id;
