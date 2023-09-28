@@ -1,5 +1,5 @@
 function initiateLeaflet() {
-    let map = L.map('map', { renderer: L.canvas() }).setView([59.32249871, 18.070166386], 12);
+    let map = L.map('map', { renderer: L.canvas() }).setView([59.85825859695506, 17.647523157741706], 15);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
