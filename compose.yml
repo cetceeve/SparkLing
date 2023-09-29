@@ -30,17 +30,17 @@ services:
     env_file:
       - .env
 
-  # web:
-  #   container_name: web-app
-  #   image: fabianzeiher/sparkling-app
-  #   build: ./website
-  #   depends_on:
-  #     - api-client
-  #   ports:
-  #     - "80:8080"
-  #   networks:
-  #     - sparkling-bridge
-  #  restart: on-failure
+  web:
+    container_name: web-app
+    image: fabianzeiher/sparkling-app
+    build: ./website
+    depends_on:
+      - api-client
+    ports:
+      - "80:8080"
+    networks:
+      - sparkling-bridge
+    restart: on-failure
   
   spark:
     image: docker.io/bitnami/spark:3.5
@@ -80,8 +80,10 @@ services:
     build: ./spark
     networks:
       - sparkling-bridge
-    command: spark-submit --master spark://spark:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 ./deserialize.py
+    command: spark-submit --master spark://spark:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 --files ./static.gtfs.gz ./metadata_join.py
     restart: on-failure
+    env_file:
+      - .env
     depends_on:
       - spark
       - kafka

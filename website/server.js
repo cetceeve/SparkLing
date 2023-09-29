@@ -68,7 +68,7 @@ function sleep(ms) {
 async function startup() {
   await sleep(5000);
   await consumer.connect();
-  await consumer.subscribe({topic: "realtime", fromBeginning: false});
+  await consumer.subscribe({topic: "realtime_with_metadata", fromBeginning: false});
   consumerService.run(consumer)
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)

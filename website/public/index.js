@@ -21,7 +21,7 @@ const map = initiateLeaflet();
 // main event loop
 evtSource.onmessage = (event) => {
     let data = JSON.parse(event.data);
-   
+
     if (vehicleHM.has(data.vehicle_id)) {
         vehicleHM.get(data.vehicle_id).updateData(data)
     } else {
@@ -29,10 +29,3 @@ evtSource.onmessage = (event) => {
         vehicleHM.get(data.vehicle_id).addTo(map);
     }
 };
-
-
-
-
-
-
-
