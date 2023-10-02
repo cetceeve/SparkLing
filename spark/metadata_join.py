@@ -7,7 +7,6 @@ import pyspark.sql.functions as F
 from io import BytesIO
 from zipfile import ZipFile
 from urllib.request import urlopen, Request
-from time import sleep
 import pandas as pd
 import os
 
@@ -123,7 +122,7 @@ def run_streaming_query():
 refreshStaticData()
 while True:
     streaming_query = run_streaming_query()
-    sleep(30)
+    streaming_query.awaitTermination(60 * 60 * 24)
     refreshStaticData()
     streaming_query.stop()
     print("DEBUG: restarting streaming query after reloading static dataset")
