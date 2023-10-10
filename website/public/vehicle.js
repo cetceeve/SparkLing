@@ -14,6 +14,7 @@ const Vehicle =  L.Circle.extend({
     updateData: function(data) {
         console.log(data);
         let newTimestamp = performance.now();
+        L.Circle.prototype.slideCancel(); // TODO: is this a fix for the missing latlng???
         L.Circle.prototype.slideTo.call(this,
             [data.latitude, data.longitude],
             { duration: newTimestamp - this.lastUpdateTimestamp});
