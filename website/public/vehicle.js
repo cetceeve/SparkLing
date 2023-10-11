@@ -24,19 +24,20 @@ const Vehicle =  L.Circle.extend({
         this.slideTo([data.latitude, data.longitude], newTimestamp, newTimestamp - this.lastUpdateTimestamp);
         this.lastUpdateTimestamp = newTimestamp;
     },
-    slideTo: async function(latlng, currTimestamp, duration) {
+    slideTo: function(latlng, currTimestamp, duration) {
         this._slideToDuration = duration;
 		this._slideToUntil    = currTimestamp + duration;
         this._slideFromLatLng = this.getLatLng();
 		this._slideToLatLng   = L.latLng(latlng);
-        this._delta_lat = this._slideToLatLng.lat - this._slideFromLatLng.lat;
-        this._delta_lng = this._slideToLatLng.lng - this._slideFromLatLng.lng;
         
         if (this._slideFromLatLng.equals(this._slideToLatLng)) {
             return this;
         }
 
-        if (!this._animationIsRunning) {
+        this._delta_lat = (this._slideToLatLng.lat - this._slideFromLatLng.lat) / (duration / 1000 * 60);
+        this._delta_lng = (this._slideToLatLng.lng - this._slideFromLatLng.lng) / (duration / 1000 * 60);
+
+        if (!this._animationIsRunning) {    
             this._animate(performance.now());
         }
     },
@@ -51,19 +52,19 @@ const Vehicle =  L.Circle.extend({
 
         // let startPoint = this._map.latLngToContainerPoint(this._slideFromLatLng);
 		// let endPoint   = this._map.latLngToContainerPoint(this._slideToLatLng);
-		let percentDone = (this._slideToDuration - remaining) / this._slideToDuration;
+		// let percentDone = (this._slideToDuration - remaining) / this._slideToDuration;
 
 		// let currPoint = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
 		// let currLatLng = this._map.containerPointToLatLng(currPoint);
-        let currLatLng = [this._slideFromLatLng.lat + percentDone * this._delta_lat,
-                            this._slideFromLatLng.lng + percentDone * this._delta_lng] 
+        let currLatLng = [this.getLatLng().lat + this._delta_lat,
+                            this.getLatLng().lng + this._delta_lng] 
         this.setLatLng(currLatLng);
         return false
     },
     _animate: async function(timestamp) {
         this._animationIsRunning = true;
         
-        isComplete = await this._step(timestamp);
+        let isComplete = await this._step(timestamp);
         if (isComplete) {
             this._animationIsRunning = false;
         } else {
