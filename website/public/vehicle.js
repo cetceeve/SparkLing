@@ -21,14 +21,16 @@ const Vehicle =  L.Circle.extend({
         L.Circle.prototype.setStyle.call(this, { color: data.trip_id ? "blue" : "red"});
         // this.bearing = data.bearing;
         // this.speed = data.speed;
-        await this.slideTo([data.latitude, data.longitude], newTimestamp, (newTimestamp - this.lastUpdateTimestamp) * 1.1);
+        this.slideTo([data.latitude, data.longitude], newTimestamp, newTimestamp - this.lastUpdateTimestamp);
         this.lastUpdateTimestamp = newTimestamp;
     },
     slideTo: async function(latlng, currTimestamp, duration) {
         this._slideToDuration = duration;
 		this._slideToUntil    = currTimestamp + duration;
         this._slideFromLatLng = this.getLatLng();
-		this._slideToLatLng   = latlng;
+		this._slideToLatLng   = L.latLng(latlng);
+        this._delta_lat = this._slideToLatLng.lat - this._slideFromLatLng.lat;
+        this._delta_lng = this._slideToLatLng.lng - this._slideFromLatLng.lng;
         
         if (this._slideFromLatLng.equals(this._slideToLatLng)) {
             return this;
@@ -43,16 +45,18 @@ const Vehicle =  L.Circle.extend({
 
         let remaining = this._slideToUntil - execTimestamp;
         if (remaining < 0) {
-			this.setLatLng(this._slideToLatLng);
+		 	this.setLatLng(this._slideToLatLng);
             return true;
         }
 
-        let startPoint = this._map.latLngToContainerPoint(this._slideFromLatLng);
-		let endPoint   = this._map.latLngToContainerPoint(this._slideToLatLng);
+        // let startPoint = this._map.latLngToContainerPoint(this._slideFromLatLng);
+		// let endPoint   = this._map.latLngToContainerPoint(this._slideToLatLng);
 		let percentDone = (this._slideToDuration - remaining) / this._slideToDuration;
 
-		let currPoint = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
-		let currLatLng = this._map.containerPointToLatLng(currPoint);
+		// let currPoint = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
+		// let currLatLng = this._map.containerPointToLatLng(currPoint);
+        let currLatLng = [this._slideFromLatLng.lat + percentDone * this._delta_lat,
+                            this._slideFromLatLng.lng + percentDone * this._delta_lng] 
         this.setLatLng(currLatLng);
         return false
     },
