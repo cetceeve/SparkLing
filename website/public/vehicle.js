@@ -1,74 +1,37 @@
-const Vehicle =  L.Circle.extend({
-    initialize: function(data) {
-        console.log(data);
-        L.Circle.prototype.initialize.call(this, [data.latitude, data.longitude])
-        L.setOptions(this, {
-            radius: 10,
-            color: data.trip_id ? "blue" : "red",
-        });
+class Vehicle {
+    constructor(data) {
         this.id = data.vehicle_id;
-        // this.bearing = data.bearing;
-        // this.speed = data.speed;
-        this.lastUpdateTimestamp = performance.now();
-    },
-    updateData: async function(data) {
-        console.log(data);
-        let newTimestamp = performance.now();
-        // L.Circle.prototype.slideCancel(); // TODO: is this a fix for the missing latlng???
-        // L.Circle.prototype.slideTo.call(this,
-        //     [data.latitude, data.longitude],
-        //     { duration: newTimestamp - this.lastUpdateTimestamp});
-        L.Circle.prototype.setStyle.call(this, { color: data.trip_id ? "blue" : "red"});
-        // this.bearing = data.bearing;
-        // this.speed = data.speed;
-        this.slideTo([data.latitude, data.longitude], newTimestamp, newTimestamp - this.lastUpdateTimestamp);
-        this.lastUpdateTimestamp = newTimestamp;
-    },
-    slideTo: function(latlng, currTimestamp, duration) {
-        this._slideToDuration = duration;
-		this._slideToUntil    = currTimestamp + duration;
-        this._slideFromLatLng = this.getLatLng();
-		this._slideToLatLng   = L.latLng(latlng);
-        
-        if (this._slideFromLatLng.equals(this._slideToLatLng)) {
-            return this;
+        this.onTrip = data.trip_id ? true : false;
+        if (this.on_trip) {
+            this.agencyName = data.agency_name;
+            this.routeShortName = data.route_short_name;
+            this.routeLongName = data.route_long_name;
         }
-
-        this._delta_lat = (this._slideToLatLng.lat - this._slideFromLatLng.lat) / (duration / 1000 * 60);
-        this._delta_lng = (this._slideToLatLng.lng - this._slideFromLatLng.lng) / (duration / 1000 * 60);
-
-        if (!this._animationIsRunning) {    
-            this._animate(performance.now());
+        let timestamp = performance.now();
+        this.waypoints = [{
+            timestamp: timestamp,
+            animateUntil: timestamp,
+            latlng: [data.latitude, data.longitude],
+        }];
+    }
+    updateData(data) {
+        this.onTrip = data.trip_id ? true : false;
+        if (this.on_trip) {
+            this.agencyName = data.agency_name;
+            this.routeShortName = data.route_short_name;
+            this.routeLongName = data.route_long_name;
         }
-    },
-    _step: async function(execTimestamp) {
-        if (!this._map) return true;
-
-        let remaining = this._slideToUntil - execTimestamp;
-        if (remaining < 0) {
-		 	this.setLatLng(this._slideToLatLng);
-            return true;
+        let timestamp = performance.now();
+        let prevWaypoint = this.waypoints[this.waypoints.length-1];
+        // let duration = timestamp - prevWaypoint.timestamp;
+        let duration = 1000;
+        if (prevWaypoint.animateUntil > timestamp) {
+            prevWaypoint.animateUntil = Math.min(prevWaypoint.animateUntil, timestamp + (duration / 3)); // cut prev animation short
         }
-
-        // let startPoint = this._map.latLngToContainerPoint(this._slideFromLatLng);
-		// let endPoint   = this._map.latLngToContainerPoint(this._slideToLatLng);
-		// let percentDone = (this._slideToDuration - remaining) / this._slideToDuration;
-
-		// let currPoint = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
-		// let currLatLng = this._map.containerPointToLatLng(currPoint);
-        let currLatLng = [this.getLatLng().lat + this._delta_lat,
-                            this.getLatLng().lng + this._delta_lng] 
-        this.setLatLng(currLatLng);
-        return false
-    },
-    _animate: async function(timestamp) {
-        this._animationIsRunning = true;
-        
-        let isComplete = await this._step(timestamp);
-        if (isComplete) {
-            this._animationIsRunning = false;
-        } else {
-            L.Util.requestAnimFrame(this._animate, this);
-        }
-    },
-})
+        this.waypoints.push({
+            timestamp: timestamp,
+            animateUntil: timestamp + duration,
+            latlng: [data.latitude, data.longitude],
+        });
+    }
+}
