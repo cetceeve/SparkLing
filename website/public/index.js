@@ -4,9 +4,12 @@ const vehicleHM = new Map();
 // holds references to vehicles that should be rendered
 var vehiclesOnScreen = new Map();
 
-// global state to control the animation
+// holds a reference to the currently selected vehicle
+var selectedVehicle;
+
 var mapIsMoving = false; // animation is paused during map movements
 const smoothZoomLevel = 10;
+const clickableZoomLevel = 13;
 var animateSmooth; // smooth animation only if zoomed in
 
 // our custom canvasLayer, used to render vehicles
@@ -41,6 +44,7 @@ canvasLayer.animate = function() {
                     let endPoint = layer._map.latLngToContainerPoint(vehicle.realLatlng);
                     point = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
                     vehicle.animatedLatlng = layer._map.containerPointToLatLng(point);
+                    vehicle.containerPoint = point;
                 }
 
                 // draw
@@ -48,6 +52,12 @@ canvasLayer.animate = function() {
                 ctx.arc(point.x, point.y, pointRadius, 0, 2*Math.PI);
                 ctx.fill();
             });
+            // circle outline selected vehicle
+            if (selectedVehicle) {
+                ctx.beginPath();
+                ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius+1, 0, 2*Math.PI);
+                ctx.stroke();
+            }
         }
         frameCounter++;
         window.requestAnimationFrame(frame);
@@ -55,7 +65,9 @@ canvasLayer.animate = function() {
 
     // reset bounds and start the animation loop
     let { ctx } = layer.setFullLayerBounds();
-    ctx.fillStyle = "rgb(0, 100, 255)";
+    ctx.fillStyle = "blue";
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 3
     frame(performance.now());
 }
 // event handlers for our custom canvasLayer
@@ -120,6 +132,24 @@ map.on('moveend', function(e) {
     refreshVehiclesOnScreen()
     mapIsMoving = false;
     canvasLayer.animate();
+});
+
+map.on("click", function(e) {
+    if (this.getZoom() < clickableZoomLevel) {
+        return
+    }
+    let closestDist = 8;
+    let closestVehicle = undefined;
+    vehiclesOnScreen.forEach(function(vehicle, _, _) {
+        if (vehicle.containerPoint) {
+            let dist = vehicle.containerPoint.distanceTo(e.containerPoint);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestVehicle = vehicle;
+            }
+        }
+    });
+    selectedVehicle = closestVehicle;
 });
 
 
