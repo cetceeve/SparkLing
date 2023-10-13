@@ -4,66 +4,65 @@ const vehicleHM = new Map();
 // holds references to vehicles that should be rendered
 var vehiclesOnScreen = new Map();
 
+// global state to control the animation
+var mapIsMoving = false; // animation is paused during map movements
+const smoothZoomLevel = 10;
+var animateSmooth; // smooth animation only if zoomed in
 
 // our custom canvasLayer, used to render vehicles
 const canvasLayer = new L.CustomLayer({
     container: document.createElement("canvas"),
-    padding: 0,
-    zIndex: 1000,
+    maxZoom: 19,
 });
-
-// var canvasCTX;
-// event handlers for our custom canvasLayer
-canvasLayer.on("layer-render", function() {
-    // update canvas bounds when the map moves or resizes
-    let { ctx } = this.setFullLayerBounds();
-    ctx.fillStyle = "rgb(0, 100, 255)";
-});
-canvasLayer.on("layer-mounted", function() {
-    let layer = this;
-
+canvasLayer.animate = function() {
     // frame function is called every frame
+    let layer = this;
+    let frameCounter = 0;
     function frame(timestamp) {
-        // let { ctx } = layer.setFullLayerBounds();
-        let canvas = layer.getContainer();
-        let ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (mapIsMoving) {
+            return // pause animation when scrolling
+        }
+        if (animateSmooth || frameCounter % 60 == 0) {
+            let canvas = layer.getContainer();
+            let ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // let pointRadius = layer._map.getZoom();
-        let pointRadius = 5; // TODO: better size calculation
-        vehiclesOnScreen.forEach(function(vehicle, _, _) {
-            let currPoint;
-            while (vehicle.waypoints.length > 1 && vehicle.waypoints[1].animateUntil < timestamp) {
-                vehicle.waypoints.shift(); // remove old waypoints
-            }
-            if (vehicle.waypoints.length > 3) {
-                // DEBUG
-                console.log(vehicle.waypoints.length);
-            }
-            if (vehicle.waypoints.length == 1) {
-                currPoint = layer._map.latLngToContainerPoint(vehicle.waypoints[0].latlng);
-            } else {
-                let animationDuration = vehicle.waypoints[1].animateUntil - vehicle.waypoints[1].timestamp;
-                let remainingTime = vehicle.waypoints[1].animateUntil - timestamp;
-                let percentDone = (animationDuration - remainingTime) / animationDuration;
-                let startPoint = layer._map.latLngToContainerPoint(vehicle.waypoints[0].latlng);
-                let endPoint = layer._map.latLngToContainerPoint(vehicle.waypoints[1].latlng);
-                currPoint = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
-            }
+            let pointRadius = Math.max(1, layer._map.getZoom() - 9);
+            vehiclesOnScreen.forEach(function(vehicle, _, _) {
+                let point;
+                if (vehicle.animateUntil < timestamp) {
+                    vehicle.animatedLatlng = vehicle.realLatlng;
+                    point = layer._map.latLngToContainerPoint(vehicle.animatedLatlng);
+                } else {
+                    let animationDuration = vehicle.animateUntil - vehicle.animationStart;
+                    let remainingTime = vehicle.animateUntil - timestamp;
+                    let percentDone = (animationDuration - remainingTime) / (animationDuration + 1);
+                    let startPoint = layer._map.latLngToContainerPoint(vehicle.animationStartLatlng);
+                    let endPoint = layer._map.latLngToContainerPoint(vehicle.realLatlng);
+                    point = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
+                    vehicle.animatedLatlng = layer._map.containerPointToLatLng(point);
+                }
 
-            // draw
-            ctx.beginPath();
-            ctx.arc(currPoint.x, currPoint.y, pointRadius, 0, 2*Math.PI);
-            ctx.fill();
-        });
+                // draw
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, pointRadius, 0, 2*Math.PI);
+                ctx.fill();
+            });
+        }
+        frameCounter++;
         window.requestAnimationFrame(frame);
     }
-    window.requestAnimationFrame(frame);
+
+    // reset bounds and start the animation loop
+    let { ctx } = layer.setFullLayerBounds();
+    ctx.fillStyle = "rgb(0, 100, 255)";
+    frame(performance.now());
+}
+// event handlers for our custom canvasLayer
+canvasLayer.on("layer-mounted", function() {
+    this._reset();
+    this.animate();
 });
-
-
-
-
 
 function initiateLeaflet() {
     let map = L.map('map', {
@@ -80,6 +79,7 @@ function initiateLeaflet() {
     // }).addTo(map);
 
     // add out custom canvasLayer
+    animateSmooth = map.getZoom() > smoothZoomLevel;
     canvasLayer.addTo(map);
     return map;
 }
@@ -87,60 +87,40 @@ function initiateLeaflet() {
 // start
 const map = initiateLeaflet();
 
-function isOnScreen(vehicle) {
+function refreshVehiclesOnScreen() {
     let mapBounds = map.getBounds();
     let eastBound = mapBounds.getEast();
     let westBound = mapBounds.getWest();
     let northBound = mapBounds.getNorth();
     let southBound = mapBounds.getSouth();
-
-    for (waypoint of vehicle.waypoints) {
-        let lat = waypoint.latlng[0];
-        let lng = waypoint.latlng[1];
-        if (lat > northBound || lat < southBound) continue
-        if (eastBound < westBound) {
-            if (lng < eastBound || lng > westBound) continue
-        } else {
-            if (lng > eastBound || lng < westBound) continue
-        }
-        return true
-    }
-    return false
-}
-
-// update vehiclesOnScreen when the map moves
-map.on('moveend', function(e) {
-    let mapBounds = this.getBounds();
-    let eastBound = mapBounds.getEast();
-    let westBound = mapBounds.getWest();
-    let northBound = mapBounds.getNorth();
-    let southBound = mapBounds.getSouth();
-
     let newVehiclesOnScreen = new Map();
-
     vehicleHM.forEach(function(val, key, _) {
-        let isInBounds = false;
-        for (waypoint of val.waypoints) {
-            let lat = waypoint.latlng[0];
-            let lng = waypoint.latlng[1];
-            if (lat > northBound || lat < southBound) continue
-            if (eastBound < westBound) {
-                if (lng < eastBound || lng > westBound) continue
-            } else {
-                if (lng > eastBound || lng < westBound) continue
-            }
-            isInBounds = true;
-            break
-        }
-        if (isInBounds) {
+        if (checkBounds(val, eastBound, westBound, northBound, southBound)) {
             newVehiclesOnScreen.set(key, val);
         }
     });
-
     vehiclesOnScreen = newVehiclesOnScreen;
+}
+
+// pause animation when map is moving
+map.on("movestart", function() {
+    mapIsMoving = true;
+})
+map.on("zoomstart", function() {
+    mapIsMoving = true;
+})
+map.on("zoomend", function() {
+    refreshVehiclesOnScreen()
+    mapIsMoving = false;
+    animateSmooth = this.getZoom() > smoothZoomLevel;
+    canvasLayer.animate();
+})
+// update vehiclesOnScreen when the map moves
+map.on('moveend', function(e) {
+    refreshVehiclesOnScreen()
+    mapIsMoving = false;
+    canvasLayer.animate();
 });
-
-
 
 
 // define stream source
@@ -152,8 +132,9 @@ evtSource.onmessage = (event) => {
 
     if (vehicleHM.has(data.vehicle_id)) {
         let vehicle = vehicleHM.get(data.vehicle_id);
-        vehicle.updateData(data);
-        if (isOnScreen(vehicle)) {
+        let onScreen = isOnScreen(vehicle, map);
+        vehicle.updateData(data, onScreen);
+        if (onScreen) {
             vehiclesOnScreen.set(vehicle.id, vehicle);
         } else if (vehiclesOnScreen.has(vehicle.id)) {
             vehiclesOnScreen.delete(vehicle.id);
@@ -161,7 +142,7 @@ evtSource.onmessage = (event) => {
     } else {
         let vehicle = new Vehicle(data);
         vehicleHM.set(vehicle.id, vehicle);
-        if (isOnScreen(vehicle)) {
+        if (isOnScreen(vehicle, map)) {
             vehiclesOnScreen.set(vehicle.id, vehicle);
         }
     }

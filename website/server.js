@@ -32,7 +32,8 @@ class ConsumerService {
 // connecting to kafka 
 const kafka = new Kafka({
   clientId: 'sparkling-app',
-  brokers: ['kafka:9092',]
+  brokers: ['kafka:9092',] // for inside cluster
+  // brokers: ['localhost:9094',] // for outside cluster
 })
 const consumer = kafka.consumer({ groupId: 'sparkling-app' })
 const consumerService = new ConsumerService()

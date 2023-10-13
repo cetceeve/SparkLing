@@ -15,8 +15,7 @@ def exception_handler(request, exception):
 TRAFIKLAB_GTFS_RT_KEY = os.getenv("TRAFIKLAB_GTFS_RT_KEY")
 
 # operators adding realtime position feeds soon: jlt, vasterbotten
-# TRANSPORT_AGENCIES = ["dt", "klt", "krono", "orebro", "skane", "sl", "ul", "vastmanland", "varm", "xt", "otraf"]
-TRANSPORT_AGENCIES = ["sl", "ul"]
+TRANSPORT_AGENCIES = ["dt", "klt", "krono", "orebro", "skane", "sl", "ul", "vastmanland", "varm", "xt", "otraf"]
 
 sleep(2)
 producer = KafkaProducer(
