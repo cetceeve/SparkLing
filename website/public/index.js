@@ -59,11 +59,17 @@ canvasLayer.animate = function() {
                 ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius+1, 0, 2*Math.PI);
                 ctx.stroke();
                 let text = "";
+                if (selectedVehicle.agencyName) {
+                    text += selectedVehicle.agencyName + " "
+                }
                 if (selectedVehicle.routeShortName) {
                     text += selectedVehicle.routeShortName + " ";
                 }
                 if (selectedVehicle.routeLongName) {
                     text += selectedVehicle.routeLongName;
+                }
+                if (text === "") {
+                    text = "Ej i traffik";
                 }
                 let textMetrics = ctx.measureText(text);
                 let textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
