@@ -36,6 +36,7 @@ canvasLayer.animate = function() {
                 if (vehicle.animateUntil < timestamp) {
                     vehicle.animatedLatlng = vehicle.realLatlng;
                     point = layer._map.latLngToContainerPoint(vehicle.animatedLatlng);
+                    vehicle.containerPoint = point;
                 } else {
                     let animationDuration = vehicle.animateUntil - vehicle.animationStart;
                     let remainingTime = vehicle.animateUntil - timestamp;
@@ -52,11 +53,39 @@ canvasLayer.animate = function() {
                 ctx.arc(point.x, point.y, pointRadius, 0, 2*Math.PI);
                 ctx.fill();
             });
-            // circle outline selected vehicle
-            if (selectedVehicle) {
+            // highlight selected vehicle
+            if (selectedVehicle && vehiclesOnScreen.has(selectedVehicle.id)) {
                 ctx.beginPath();
                 ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius+1, 0, 2*Math.PI);
                 ctx.stroke();
+                let text = "";
+                if (selectedVehicle.routeShortName) {
+                    text += selectedVehicle.routeShortName + " ";
+                }
+                if (selectedVehicle.routeLongName) {
+                    text += selectedVehicle.routeLongName;
+                }
+                let textMetrics = ctx.measureText(text);
+                let textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
+                let textWidth = textMetrics.actualBoundingBoxLeft + textMetrics.actualBoundingBoxRight;
+                let textLeft = selectedVehicle.containerPoint.x;
+                let textBottom = selectedVehicle.containerPoint.y - 12 - textMetrics.actualBoundingBoxDescent;
+                let textTop = textBottom - textMetrics.actualBoundingBoxAscent;
+                ctx.beginPath();
+                ctx.fillStyle = "white";
+                ctx.rect(textLeft-2, textTop-2, textWidth+5, textHeight+5);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 2
+                ctx.rect(textLeft-2, textTop-2, textWidth+5, textHeight+5);
+                ctx.stroke();
+                ctx.fillStyle = "black";
+                ctx.fillText(text, textLeft, textBottom);
+                // reset style
+                ctx.fillStyle = "blue";
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 3
             }
         }
         frameCounter++;
@@ -68,6 +97,7 @@ canvasLayer.animate = function() {
     ctx.fillStyle = "blue";
     ctx.strokeStyle = "red";
     ctx.lineWidth = 3
+    ctx.font = "20px arial"
     frame(performance.now());
 }
 // event handlers for our custom canvasLayer
@@ -136,7 +166,7 @@ map.on('moveend', function(e) {
 
 map.on("click", function(e) {
     if (this.getZoom() < clickableZoomLevel) {
-        return
+        selectedVehicle = undefined;
     }
     let closestDist = 8;
     let closestVehicle = undefined;

@@ -2,7 +2,7 @@ class Vehicle {
     constructor(data) {
         this.id = data.vehicle_id;
         this.onTrip = data.trip_id ? true : false;
-        if (this.on_trip) {
+        if (this.onTrip) {
             this.agencyName = data.agency_name;
             this.routeShortName = data.route_short_name;
             this.routeLongName = data.route_long_name;
@@ -16,7 +16,7 @@ class Vehicle {
     }
     updateData(data, isOnScreen) {
         this.onTrip = data.trip_id ? true : false;
-        if (this.on_trip) {
+        if (this.onTrip) {
             this.agencyName = data.agency_name;
             this.routeShortName = data.route_short_name;
             this.routeLongName = data.route_long_name;
