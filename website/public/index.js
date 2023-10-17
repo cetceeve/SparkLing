@@ -12,6 +12,31 @@ const smoothZoomLevel = 10;
 const clickableZoomLevel = 13;
 var animateSmooth; // smooth animation only if zoomed in
 
+// vehicle icons
+const busIcon = new Image();
+busIcon.src = "./images/bus_icon.png";
+const trainIcon = new Image();
+trainIcon.src = "./images/train_icon.png";
+const tramIcon = new Image();
+tramIcon.src = "./images/tram_icon.png";
+const metroIcon = new Image();
+metroIcon.src = "./images/metro_icon.png";
+const ferryIcon = new Image();
+ferryIcon.src = "./images/ferry_icon.png";
+const taxiIcon = new Image();
+taxiIcon.src = "./images/taxi_icon.png";
+const otherIcon = new Image();
+otherIcon.src = "./images/other_icon.png";
+const iconsByColor = {
+    "#FF7600": trainIcon,
+    "#D61355": metroIcon,
+    "#0078FF": busIcon,
+    "#2BA714": tramIcon,
+    "#0D1282": ferryIcon,
+    "#FBCB0A": taxiIcon,
+    "#8B8B8B": otherIcon,
+}
+
 // our custom canvasLayer, used to render vehicles
 const canvasLayer = new L.CustomLayer({
     container: document.createElement("canvas"),
@@ -30,7 +55,7 @@ canvasLayer.animate = function() {
             let ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            let pointRadius = Math.max(1, layer._map.getZoom() - 9);
+            let pointRadius = zoomToPointRadius(layer._map.getZoom());
             vehiclesOnScreen.forEach(function(vehicle, _, _) {
                 let point;
                 if (vehicle.animateUntil < timestamp) {
@@ -49,33 +74,25 @@ canvasLayer.animate = function() {
                 }
 
                 // draw
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, pointRadius, 0, 2*Math.PI);
-                ctx.fill();
+                if (pointRadius < 7) {
+                    ctx.beginPath();
+                    ctx.fillStyle = vehicle.color;
+                    ctx.arc(point.x, point.y, pointRadius, 0, 2*Math.PI);
+                    ctx.fill();
+                } else {
+                    ctx.drawImage(iconsByColor[vehicle.color], point.x-pointRadius, point.y-pointRadius, 2*pointRadius, 2*pointRadius);
+                }
             });
             // highlight selected vehicle
             if (selectedVehicle && vehiclesOnScreen.has(selectedVehicle.id)) {
                 ctx.beginPath();
                 ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius+1, 0, 2*Math.PI);
                 ctx.stroke();
-                let text = "";
-                if (selectedVehicle.agencyName) {
-                    text += selectedVehicle.agencyName + " "
-                }
-                if (selectedVehicle.routeShortName) {
-                    text += selectedVehicle.routeShortName + " ";
-                }
-                if (selectedVehicle.routeLongName) {
-                    text += selectedVehicle.routeLongName;
-                }
-                if (text === "") {
-                    text = "Ej i traffik";
-                }
-                let textMetrics = ctx.measureText(text);
+                let textMetrics = ctx.measureText(selectedVehicle.displayText);
                 let textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
                 let textWidth = textMetrics.actualBoundingBoxLeft + textMetrics.actualBoundingBoxRight;
-                let textLeft = selectedVehicle.containerPoint.x;
-                let textBottom = selectedVehicle.containerPoint.y - 12 - textMetrics.actualBoundingBoxDescent;
+                let textLeft = selectedVehicle.containerPoint.x + 3;
+                let textBottom = selectedVehicle.containerPoint.y - pointRadius - 7 - textMetrics.actualBoundingBoxDescent;
                 let textTop = textBottom - textMetrics.actualBoundingBoxAscent;
                 ctx.beginPath();
                 ctx.fillStyle = "white";
@@ -87,7 +104,7 @@ canvasLayer.animate = function() {
                 ctx.rect(textLeft-2, textTop-2, textWidth+5, textHeight+5);
                 ctx.stroke();
                 ctx.fillStyle = "black";
-                ctx.fillText(text, textLeft, textBottom);
+                ctx.fillText(selectedVehicle.displayText, textLeft, textBottom);
                 // reset style
                 ctx.fillStyle = "blue";
                 ctx.strokeStyle = "red";
@@ -114,17 +131,14 @@ canvasLayer.on("layer-mounted", function() {
 
 function initiateLeaflet() {
     let map = L.map('map', {
-        center: [59.85825859695506, 17.647523157741706],
-        zoom: 15,
+        center:  [59.34563446044922, 18.071327209472656],
+        zoom: 16,
         renderer: L.canvas(),
     });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
-    // L.tileLayer('https://tile.thunderforest.com/pioneer/{z}/{x}/{y}.png?apikey=131eec8b12b3471cb55357e19c1c1b62', {
-    //     maxZoom: 19,
-    // }).addTo(map);
 
     // add out custom canvasLayer
     animateSmooth = map.getZoom() > smoothZoomLevel;
@@ -171,10 +185,12 @@ map.on('moveend', function(e) {
 });
 
 map.on("click", function(e) {
-    if (this.getZoom() < clickableZoomLevel) {
+    let zoom = this.getZoom()
+    if (zoom < clickableZoomLevel) {
         selectedVehicle = undefined;
+        return
     }
-    let closestDist = 8;
+    let closestDist = zoomToPointRadius(zoom) + 2;
     let closestVehicle = undefined;
     vehiclesOnScreen.forEach(function(vehicle, _, _) {
         if (vehicle.containerPoint) {

@@ -27,3 +27,11 @@ function isOnScreen(vehicle, map) {
     let southBound = mapBounds.getSouth();
     return checkBounds(vehicle, eastBound, westBound, northBound, southBound);
 }
+
+function zoomToPointRadius(zoom) {
+    let pointRadius = Math.max(1, zoom - 9);
+    if (pointRadius > 6) {
+        pointRadius += 5;
+    }
+    return pointRadius;
+}
