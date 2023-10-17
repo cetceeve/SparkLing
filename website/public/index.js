@@ -85,9 +85,22 @@ canvasLayer.animate = function() {
             });
             // highlight selected vehicle
             if (selectedVehicle && vehiclesOnScreen.has(selectedVehicle.id)) {
+                // draw the vehicle again on top
+                if (pointRadius < 7) {
+                    ctx.beginPath();
+                    ctx.fillStyle = selectedVehicle.color;
+                    ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius, 0, 2*Math.PI);
+                    ctx.fill();
+                } else {
+                    ctx.drawImage(iconsByColor[vehicle.color], selectedVehicle.containerPoint.x-pointRadius, selectedVehicle.containerPoint.y-pointRadius, 2*pointRadius, 2*pointRadius);
+                }
+                // draw highlight circle
                 ctx.beginPath();
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 3
                 ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius+1, 0, 2*Math.PI);
                 ctx.stroke();
+                // draw textbox
                 let textMetrics = ctx.measureText(selectedVehicle.displayText);
                 let textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
                 let textWidth = textMetrics.actualBoundingBoxLeft + textMetrics.actualBoundingBoxRight;
@@ -105,10 +118,6 @@ canvasLayer.animate = function() {
                 ctx.stroke();
                 ctx.fillStyle = "black";
                 ctx.fillText(selectedVehicle.displayText, textLeft, textBottom);
-                // reset style
-                ctx.fillStyle = "blue";
-                ctx.strokeStyle = "red";
-                ctx.lineWidth = 3
             }
         }
         frameCounter++;
@@ -117,9 +126,6 @@ canvasLayer.animate = function() {
 
     // reset bounds and start the animation loop
     let { ctx } = layer.setFullLayerBounds();
-    ctx.fillStyle = "blue";
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 3
     ctx.font = "20px arial"
     frame(performance.now());
 }
