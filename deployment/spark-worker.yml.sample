@@ -26,9 +26,9 @@ spec:
         - name: SPARK_MASTER_URL
           value: spark://spark:7077
         - name: SPARK_WORKER_MEMORY
-          value: 1G
+          value: "2G"
         - name: SPARK_WORKER_CORES
-          value: "1"
+          value: "4"
         - name: SPARK_RPC_AUTHENTICATION_ENABLED
           value: "no"
         - name: SPARK_RPC_ENCRYPTION_ENABLED
@@ -39,3 +39,17 @@ spec:
           value: "no"
         - name: SPARK_USER
           value: spark
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-worker-srv
+  labels:
+    name: spark-worker
+spec:
+  ports:
+  - port: 7077
+    targetPort: 7077
+    protocol: TCP
+  selector:
+    app: spark-worker
