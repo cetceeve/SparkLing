@@ -1,8 +1,6 @@
-FROM docker.io/bitnami/spark:3.5
+FROM docker.io/apache/spark-py:v3.4.0
 
-# add python dependencies
-RUN pip install pandas pyarrow
 # add java dependencies
-COPY ./spark-sql-kafka-0-10_2.12-3.5.0.jar /opt/bitnami/spark/jars/spark-sql-kafka-0-10_2.12-3.5.0.jar
+COPY ./spark-sql-kafka-0-10_2.12-3.5.0.jar /opt/spark/jars/spark-sql-kafka-0-10_2.12-3.5.0.jar
 
-COPY . .
+COPY ./rt_stream_only.py /app/rt_stream_only.py
