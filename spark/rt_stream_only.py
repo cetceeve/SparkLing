@@ -3,9 +3,6 @@ from pyspark.sql.types import StructType, StructField, StringType, DoubleType, L
 from pyspark.sql.window import Window
 from pyspark import SparkFiles
 import pyspark.sql.functions as F
-import os
-
-TRAFIKLAB_GTFS_STATIC_KEY = os.getenv("TRAFIKLAB_GTFS_STATIC_KEY")
 
 spark = SparkSession \
     .builder \
@@ -14,7 +11,7 @@ spark = SparkSession \
     .appName("SparkLingMetadataJoin") \
     .getOrCreate()
 
-# csv file containing the aggregates for gtfs static sweden hosted in strage bucket
+# csv file containing the aggregates for gtfs static sweden hosted in storage bucket
 spark.sparkContext.addFile('https://storage.googleapis.com/gtfs_static/sweden_aggregated_metadata.csv')
 
 STATIC_SCHEMA = StructType([
@@ -36,10 +33,9 @@ RT_SCHEMA = StructType() \
 
 def run_streaming_query():
     """This refreshes the static dataframe with the latest static GTFS dataset"""
-    gtfs_static_sweden_aggregate_path = SparkFiles.get("sweden_aggregated_metadata.csv")
     static_df = spark.read \
         .schema(STATIC_SCHEMA) \
-        .csv("file://" + gtfs_static_sweden_aggregate_path, header=False, sep = ",")
+        .csv(SparkFiles.get("sweden_aggregated_metadata.csv"), header=False, sep = ",")
     
     static_df.show()
     print("=======================================")
