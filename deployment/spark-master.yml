@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark
+  labels:
+    app: spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark
+  template:
+    metadata:
+      labels:
+        app: spark
+    spec:
+      containers:
+      - name: spark
+        # image: docker.io/bitnami/spark:3.5
+        image: docker.io/fabianzeiher/sparkling-spark
+        ports:
+        - containerPort: 7077
+        - containerPort: 8080
+        env:
+        - name: SPARK_MODE
+          value: master
+        - name: SPARK_RPC_AUTHENTICATION_ENABLED
+          value: "no"
+        - name: SPARK_RPC_ENCRYPTION_ENABLED
+          value: "no"
+        - name: SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED
+          value: "no"
+        - name: SPARK_SSL_ENABLED
+          value: "no"
+        - name: SPARK_USER
+          value: spark
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark
+  labels:
+    name: spark
+spec:
+  ports:
+  - port: 7077
+    targetPort: 7077
+    protocol: TCP
+  selector:
+    app: spark
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-ui
+  labels:
+    name: spark-ui
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: spark
+  type: LoadBalancer
