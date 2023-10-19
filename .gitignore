@@ -160,3 +160,8 @@ cython_debug/
 #.idea/
 
 .env
+.DS_Store
+.vscode
+
+# Dependency downloaded for production
+spark/spark-sql-kafka-0-10_2.12-3.5.0.jar

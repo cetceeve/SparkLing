@@ -1,0 +1,23 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-client
+  labels:
+    app: api-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-client
+  template:
+    metadata:
+      labels:
+        app: api-client
+    spec:
+      containers:
+      - name: api-client
+        image: docker.io/fabianzeiher/sparkling-api-client
+        envFrom:
+          - secretRef:
+              name: api-key-secret 
