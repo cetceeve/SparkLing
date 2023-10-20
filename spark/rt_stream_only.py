@@ -1,18 +1,12 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, LongType
-from pyspark.sql.window import Window
-from pyspark import SparkFiles
 import pyspark.sql.functions as F
 
 spark = SparkSession \
     .builder \
-    .config("spark.files.overwrite", "true") \
     .master("k8s://sparkling:7078") \
     .appName("SparkLingMetadataJoin") \
     .getOrCreate()
-
-# csv file containing the aggregates for gtfs static sweden hosted in storage bucket
-spark.sparkContext.addFile('https://storage.googleapis.com/gtfs_static/sweden_aggregated_metadata.csv')
 
 STATIC_SCHEMA = StructType([
     StructField("trip_id", LongType(), True),
@@ -35,9 +29,9 @@ def run_streaming_query():
     """This refreshes the static dataframe with the latest static GTFS dataset"""
     static_df = spark.read \
         .schema(STATIC_SCHEMA) \
-        .csv(SparkFiles.get("sweden_aggregated_metadata.csv"), header=False, sep = ",")
+        .csv("gs://gtfs_static/sweden_aggregated_metadata.csv", header=True, inferSchema=False, sep = ",")
     
-    static_df.show()
+    print(static_df.show())
     print("=======================================")
     print("refreshed static GTFS Sweden dataframe")
     print("=======================================")
