@@ -1,6 +1,7 @@
 FROM docker.io/apache/spark-py:v3.4.0
 
 # add java dependencies
-COPY ./spark-sql-kafka-0-10_2.12-3.5.0.jar /opt/spark/jars/spark-sql-kafka-0-10_2.12-3.5.0.jar
+# COPY ./spark-sql-kafka-0-10_2.12-3.4.0.jar /opt/spark/jars/spark-sql-kafka-0-10_2.12-3.4.0.jar
+COPY ./gcs-connector-hadoop2-latest.jar /opt/spark/jars/gcs-connector-hadoop2-latest.jar
 
 COPY ./rt_stream_only.py /app/rt_stream_only.py

@@ -164,4 +164,5 @@ cython_debug/
 .vscode
 
 # Dependency downloaded for production
-spark/spark-sql-kafka-0-10_2.12-3.5.0.jar
+spark/*.jar
+deployment/tonal-vector-401814-d98ee53dbc02.json
