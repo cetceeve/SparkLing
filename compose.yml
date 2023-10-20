@@ -3,8 +3,6 @@ services:
     image: docker.io/bitnami/kafka:3.5
     ports:
       - "9094:9094" # for running the webserver locally
-    #volumes:
-    #  - "kafka_data:/bitnami"
     networks:
       - sparkling-bridge
     environment:
@@ -79,7 +77,7 @@ services:
     build: ./spark
     networks:
       - sparkling-bridge
-    command: spark-submit --master spark://spark:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 --files ./static.gtfs.gz ./metadata_join.py
+    command: spark-submit --master spark://spark:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 ./metadata_join.py
     restart: on-failure
     env_file:
       - .env

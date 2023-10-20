@@ -36,15 +36,12 @@ STATIC_DF = STATIC_DF.persist()
 def refreshStaticData():
     """This function refreshes the static dataframe with the latest static GTFS dataset"""
     global STATIC_DF
-    # global TRAFIKLAB_GTFS_STATIC_KEY
-    # req = Request(f"https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip?key={TRAFIKLAB_GTFS_STATIC_KEY}")
-    # req.add_header("accept", "application/octet-stream")
-    # req.add_header("accept-encoding", "gzip")
-    # # req.add_header("if-none-match", "bfc13a64729c4290ef5b2c2730249c88ca92d82d")
-    # # req.add_header("if-modified-since", "Mon, 13 Jul 2020 04:24:36 GMT")
-    # resp = urlopen(req)
-    # myzip = ZipFile(BytesIO(resp.read()))
-    myzip = ZipFile(SparkFiles.get("static.gtfs.gz"))
+    global TRAFIKLAB_GTFS_STATIC_KEY
+    req = Request(f"https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip?key={TRAFIKLAB_GTFS_STATIC_KEY}")
+    req.add_header("accept", "application/octet-stream")
+    req.add_header("accept-encoding", "gzip")
+    resp = urlopen(req)
+    myzip = ZipFile(BytesIO(resp.read()))
     print("downloaded file")
 
     with myzip.open("trips.txt") as f:
