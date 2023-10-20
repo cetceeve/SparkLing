@@ -37,12 +37,13 @@ def refreshStaticData():
     """This function refreshes the static dataframe with the latest static GTFS dataset"""
     global STATIC_DF
     global TRAFIKLAB_GTFS_STATIC_KEY
+    print("starting download for static GTFS dataset, this may take a few minutes...")
     req = Request(f"https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip?key={TRAFIKLAB_GTFS_STATIC_KEY}")
     req.add_header("accept", "application/octet-stream")
     req.add_header("accept-encoding", "gzip")
     resp = urlopen(req)
     myzip = ZipFile(BytesIO(resp.read()))
-    print("downloaded file")
+    print("download complete")
 
     with myzip.open("trips.txt") as f:
         df = pd.read_csv(f, dtype={
