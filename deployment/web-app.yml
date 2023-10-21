@@ -36,3 +36,4 @@ spec:
   selector:
     app: web-app
   type: LoadBalancer
+  loadBalancerIP: "34.88.70.203"
