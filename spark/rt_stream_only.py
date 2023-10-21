@@ -40,8 +40,9 @@ def run_streaming_query():
     streaming_df = spark \
         .readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", "kafka:9092") \
+        .option("kafka.bootstrap.servers", "sparkling-kafka-bootstrap:9092") \
         .option("subscribe", "realtime") \
+        .option("failOnDataLoss","false") \
         .load() \
         .withColumn("value", F.col("value").cast("STRING")) \
         .withColumn("value", F.regexp_replace("value", "\"", "")) \
@@ -62,8 +63,8 @@ def run_streaming_query():
         .writeStream \
         .format("kafka") \
         .option("checkPointLocation", "/tmp/spark/frequency/checkpoint") \
-        .option("kafka.bootstrap.servers", "kafka:9092") \
-        .option("topic", "realtime_with_metadata") \
+        .option("kafka.bootstrap.servers", "sparkling-kafka-bootstrap:9092") \
+        .option("topic", "realtime-with-metadata") \
         .start()
     return streaming_query
 

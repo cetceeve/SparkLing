@@ -38,3 +38,8 @@ kubectl create secret generic api-key-secret --from-literal=TRAFIKLAB_GTFS_RT_KE
 ```
 kubectl --namespace default scale deployment {my-deployment} --replicas 0
 ```
+
+Remove kafka deployment
+```
+kubectl -n default delete $(kubectl get strimzi -o name -n default)
+```

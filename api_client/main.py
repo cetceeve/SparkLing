@@ -19,7 +19,7 @@ TRANSPORT_AGENCIES = ["dt", "klt", "krono", "orebro", "skane", "sl", "ul", "vast
 
 sleep(2)
 producer = KafkaProducer(
-    bootstrap_servers=["kafka:9092"],
+    bootstrap_servers=["sparkling-kafka-bootstrap:9092"],
     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
 )
 last_update_timestamp = datetime.now()

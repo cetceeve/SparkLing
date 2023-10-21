@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: spark-submit
+spec:
+  serviceAccountName: spark
+  containers:
+  - name: spark-submit
+    image: docker.io/fabianzeiher/sparkling-py-spark
+    # do not use command, it would break HDFS authentication
+    args: 
+      ["/opt/spark/bin/spark-submit",
+      "--master", "k8s://https://$(KUBERNETES_PORT_443_TCP_ADDR):$(KUBERNETES_PORT_443_TCP_PORT)", # k8s:// defines we are running on kuberenetes, rest is URL of the kuberenetes cluster API server
+      "--deploy-mode", "cluster", 
+      "--name", "sparkling",
+      "--class", "org.apache.spark.examples.SparkPi", # defines the __main__ method for python
+      "--jars", "local:///opt/spark/jars/gcs-connector-hadoop2-latest.jar", # necessary to load from google cloud storage (local defines this package is in the container)
+      "--conf", "spark.kubernetes.file.upload.path='local:///opt/spark/jars'", # filepath for dependencies 
+      "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0", # for spaeking to kafka --packages ensure transitive dependencies are loaded automatically
+      "--conf", "spark.jars.ivy=/tmp/.ivy", # we need an absolut path for the ivy cache
+      "--conf", "spark.kubernetes.container.image=docker.io/fabianzeiher/sparkling-py-spark:latest", # the spark image we base or driver and executor on (includes python dependencies)
+      "--conf", "spark.kubernetes.driver.pod.name=spark",
+      "--conf", "spark.kubernetes.namespace=default",
+      "--conf", "spark.kubernetes.authenticate.driver.serviceAccountName=spark", # service account spark needs permission for pods, services, configmap and persistent volume claims
+      "--conf", "spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS",
+      "--conf", "spark.dynamicAllocation.enabled=false", # we define how many executors ourselfs
+      "--conf", "spark.executor.instances=1",
+      "--conf", "spark.kubernetes.container.image.pullPolicy=Always", # efficient enouph due to caching and more reliable then IfNotPresent
+      "--conf", "spark.ui.enabled=false",
+      "local:///app/rt_stream_only.py"] # the py-spark job file

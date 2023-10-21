@@ -1,0 +1,23 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: realtime
+  labels:
+    strimzi.io/cluster: sparkling
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 900000 # 15min
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: realtime-with-metadata
+  labels:
+    strimzi.io/cluster: sparkling
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 900000 # 15 min
