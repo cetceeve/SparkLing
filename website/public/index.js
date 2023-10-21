@@ -92,7 +92,7 @@ canvasLayer.animate = function() {
                     ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius, 0, 2*Math.PI);
                     ctx.fill();
                 } else {
-                    ctx.drawImage(iconsByColor[vehicle.color], selectedVehicle.containerPoint.x-pointRadius, selectedVehicle.containerPoint.y-pointRadius, 2*pointRadius, 2*pointRadius);
+                    ctx.drawImage(iconsByColor[selectedVehicle.color], selectedVehicle.containerPoint.x-pointRadius, selectedVehicle.containerPoint.y-pointRadius, 2*pointRadius, 2*pointRadius);
                 }
                 // draw highlight circle
                 ctx.beginPath();
