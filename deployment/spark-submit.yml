@@ -27,4 +27,14 @@ spec:
       "--conf", "spark.executor.instances=1",
       "--conf", "spark.kubernetes.container.image.pullPolicy=Always", # efficient enouph due to caching and more reliable then IfNotPresent
       "--conf", "spark.ui.enabled=false",
+      "--driver-cores", "1",
+      "--driver-memory", "1G",
+      "--executor-memory", "1G", # executor core default is 1
       "local:///app/rt_stream_only.py"] # the py-spark job file
+    resources: 
+      requests:
+        cpu: 50m
+        memory: 150M
+      limits: 
+        cpu: 100m
+        memory: 200M

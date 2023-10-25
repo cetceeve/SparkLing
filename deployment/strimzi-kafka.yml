@@ -24,10 +24,38 @@ spec:
       inter.broker.protocol.version: "3.6"
     storage:
       type: ephemeral
+    resources:
+      requests:
+        memory: 1G
+        cpu: 500m
+      limits:
+        memory: 2G
+        cpu: 1000m
   zookeeper:
     replicas: 1
     storage:
       type: ephemeral
+    resources:
+      requests:
+        memory: 0.5G
+        cpu: 250m
+      limits:
+        memory: 0.5G
+        cpu: 250m
   entityOperator:
-    topicOperator: {}
-    userOperator: {}
+    topicOperator: 
+      resources:
+        requests:
+          memory: 0.5G
+          cpu: 250m
+        limits:
+          memory: 0.5G
+          cpu: 500m
+    userOperator: 
+      resources:
+        requests:
+          memory: 0.5G
+          cpu: 250m
+        limits:
+          memory: 0.5G
+          cpu: 500m
