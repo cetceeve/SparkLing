@@ -1,7 +1,7 @@
 function dataToDisplayText(data) {
     let text;
     if (!data.trip_id) {
-        text = "Ej i traffik";
+        text = "Ej i trafik";
     } else {
         text = "";
         if (data.route_short_name) {
