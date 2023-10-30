@@ -86,15 +86,9 @@ async fn run_client(url: String, interval: Duration, sender: UnboundedSender<Veh
                                     metadata: None,
                                 };
                                 sender.send(vehicle).expect("internal channel broken");
-                            } else {
-                                println!("one");
                             }
                         }
-                    } else {
-                        println!("two");
                     }
-                } else {
-                    println!("three");
                 }
             }
         }
