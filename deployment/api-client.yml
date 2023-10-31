@@ -1,4 +1,3 @@
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,3 +20,10 @@ spec:
         envFrom:
           - secretRef:
               name: api-key-secret 
+        resources: 
+          requests:
+            cpu: 250m
+            memory: 100M
+          limits: 
+            cpu: 350m
+            memory: 200M

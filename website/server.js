@@ -32,7 +32,7 @@ class ConsumerService {
 // connecting to kafka 
 const kafka = new Kafka({
   clientId: 'sparkling-app',
-  brokers: ['kafka:9092',] // for inside cluster
+  brokers: ['sparkling-kafka-bootstrap:9092',] // for inside cluster
   // brokers: ['localhost:9094',] // for outside cluster
 })
 const consumer = kafka.consumer({ groupId: 'sparkling-app' })
@@ -69,7 +69,7 @@ function sleep(ms) {
 async function startup() {
   await sleep(5000);
   await consumer.connect();
-  await consumer.subscribe({topic: "realtime_with_metadata", fromBeginning: false});
+  await consumer.subscribe({topic: "realtime-with-metadata", fromBeginning: false});
   consumerService.run(consumer)
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)

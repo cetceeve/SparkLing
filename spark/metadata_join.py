@@ -150,7 +150,7 @@ def run_streaming_query():
         .format("kafka") \
         .option("checkPointLocation", "/tmp/spark/frequency/checkpoint") \
         .option("kafka.bootstrap.servers", "kafka:9092") \
-        .option("topic", "realtime_with_metadata") \
+        .option("topic", "realtime-with-metadata") \
         .start()
     return streaming_query
 

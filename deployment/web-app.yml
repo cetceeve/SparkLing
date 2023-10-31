@@ -21,6 +21,13 @@ spec:
         image: docker.io/fabianzeiher/sparkling-app
         ports:
           - containerPort: 8080
+        resources: 
+          requests:
+            cpu: 150m
+            memory: 150M
+          limits: 
+            cpu: 300m
+            memory: 250M
 ---
 apiVersion: v1
 kind: Service
@@ -36,3 +43,4 @@ spec:
   selector:
     app: web-app
   type: LoadBalancer
+  loadBalancerIP: "34.88.70.203"
