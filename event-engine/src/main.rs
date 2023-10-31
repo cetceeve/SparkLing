@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
+use std::fmt::Write;
+use std::time::Duration;
+use kafka::producer::{Producer, Record, RequiredAcks};
 
 mod rt_gtfs_client;
 mod stream_processor;
@@ -33,8 +36,18 @@ async fn main() {
     });
     rt_gtfs_client::start_vehicle_position_clients(input_sender);
 
+    // send json serialized messages to kafka
+    let mut producer =
+        Producer::from_hosts(vec!("sparkling-kafka-bootstrap:9092".to_owned()))
+            .with_ack_timeout(Duration::from_secs(1))
+            .with_required_acks(RequiredAcks::One)
+            .create()
+            .unwrap();
+
     loop {
         let item = output_receiver.recv().await.unwrap();
+        let serialized = serde_json::to_vec(&item).expect("Serialisation failed.");
+        producer.send(&Record::from_value("realtime-with-metadata", serialized)).unwrap();
         println!("{:?}", item)
     }
 }
