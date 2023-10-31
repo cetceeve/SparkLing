@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-engine
+  labels:
+    app: event-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-engine
+  template:
+    metadata:
+      labels:
+        app: event-engine
+    spec:
+      containers:
+      - name: event-engine
+        image: docker.io/fabianzeiher/sparkling-event-engine
+        envFrom:
+          - secretRef:
+              name: api-key-secret 
+        resources: 
+          requests:
+            cpu: 500m
+            memory: 500M
+          limits: 
+            cpu: 1000m
+            memory: 1000M
