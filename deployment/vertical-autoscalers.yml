@@ -1,12 +1,12 @@
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
-  name: api-client-vpa
+  name: event-engine-vpa
 spec:
   targetRef:
     apiVersion: "apps/v1"
     kind:       Deployment
-    name:       api-client
+    name:       event-engine
   updatePolicy:
     updateMode: "Auto"
 ---
@@ -19,17 +19,5 @@ spec:
     apiVersion: "apps/v1"
     kind:       Deployment
     name:       web-app
-  updatePolicy:
-    updateMode: "Auto"
----
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: spark-submit-vpa
-spec:
-  targetRef:
-    apiVersion: "v1"
-    kind:       Pod
-    name:       spark-submit
   updatePolicy:
     updateMode: "Auto"
