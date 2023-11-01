@@ -218,8 +218,8 @@ const evtSource = new EventSource(window.location.origin + "/realtime");
 evtSource.onmessage = (event) => {
     let data = JSON.parse(event.data);
 
-    if (vehicleHM.has(data.vehicle_id)) {
-        let vehicle = vehicleHM.get(data.vehicle_id);
+    if (vehicleHM.has(data.id)) {
+        let vehicle = vehicleHM.get(data.id);
         let onScreen = isOnScreen(vehicle, map);
         vehicle.updateData(data, onScreen);
         if (onScreen) {

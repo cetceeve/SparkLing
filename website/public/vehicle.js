@@ -4,20 +4,20 @@ function dataToDisplayText(data) {
         text = "Ej i trafik";
     } else {
         text = "";
-        if (data.route_short_name) {
-            text += data.route_short_name;
+        if (data.metadata.route_short_name) {
+            text += data.metadata.route_short_name;
         }
-        if (data.route_long_name) {
+        if (data.metadata.route_long_name) {
             if (text.length > 0) {
                 text += " "
             }
-            text += data.route_long_name;
+            text += data.metadata.route_long_name;
         }
-        if (data.trip_headsign) {
+        if (data.metadata.trip_headsign) {
             if (text.length > 0) {
                 text += " "
             }
-            text += "mot " + data.trip_headsign;
+            text += "mot " + data.metadata.trip_headsign;
         }
         if (text.length == 0) {
             text = "Ingen information";
@@ -60,13 +60,13 @@ function routeTypeToColor(routeType) {
 
 class Vehicle {
     constructor(data) {
-        this.id = data.vehicle_id;
+        this.id = data.id;
         this.onTrip = data.trip_id ? true : false;
         this.displayText = dataToDisplayText(data);
-        this.routeType = data.route_type;
-        this.color = routeTypeToColor(data.route_type);
+        this.routeType = data.metadata.route_type;
+        this.color = routeTypeToColor(data.metadata.route_type);
         let timestamp = performance.now();
-        this.realLatlng = [data.latitude, data.longitude];
+        this.realLatlng = [data.lat, data.lng];
         this.animatedLatlng = this.realLatlng;
         this.animationStartLatlng = this.realLatlng;
         this.animationStart = timestamp;
@@ -75,8 +75,8 @@ class Vehicle {
     updateData(data, isOnScreen) {
         this.onTrip = data.trip_id ? true : false;
         this.displayText = dataToDisplayText(data);
-        this.routeType = data.route_type;
-        this.color = routeTypeToColor(data.route_type);
+        this.routeType = data.metadata.route_type;
+        this.color = routeTypeToColor(data.metadata.route_type);
         let timestamp = performance.now();
         let duration = timestamp - this.animationStart;
         if (isOnScreen) {
@@ -85,7 +85,7 @@ class Vehicle {
             this.animationStartLatlng = this.realLatlng;
             this.animatedLatlng = this.animationStartLatlng;
         }
-        this.realLatlng = [data.latitude, data.longitude];
+        this.realLatlng = [data.lat, data.lng];
         this.animationStart = timestamp;
         this.animateUntil = timestamp + duration * 1.5;
     }
