@@ -2,6 +2,8 @@ function dataToDisplayText(data) {
     let text;
     if (!data.trip_id) {
         text = "Ej i trafik";
+    } else if (!data.metadata) {
+        text = "Ingen information";
     } else {
         text = "";
         if (data.metadata.route_short_name) {
@@ -26,10 +28,12 @@ function dataToDisplayText(data) {
     return text;
 }
 
-function routeTypeToColor(routeType) {
-    if (!routeType) {
+function dataToColor(data) {
+    if (!data.metadata || !data.metadata.route_type) {
         return "#8B8B8B";
     }
+    let routeType = data.metadata.route_type;
+
     // train
     if (routeType < 400) {
         return "#FF7600";
@@ -63,11 +67,9 @@ class Vehicle {
         this.id = data.id;
         this.onTrip = data.trip_id ? true : false;
         this.displayText = dataToDisplayText(data);
-        this.routeType = data.metadata.route_type;
-        this.color = routeTypeToColor(data.metadata.route_type);
+        this.color = dataToColor(data);
         let timestamp = performance.now();
         this.realLatlng = [data.lat, data.lng];
-        this.animatedLatlng = this.realLatlng;
         this.animationStartLatlng = this.realLatlng;
         this.animationStart = timestamp;
         this.animateUntil = timestamp;
@@ -75,15 +77,18 @@ class Vehicle {
     updateData(data, isOnScreen) {
         this.onTrip = data.trip_id ? true : false;
         this.displayText = dataToDisplayText(data);
-        this.routeType = data.metadata.route_type;
-        this.color = routeTypeToColor(data.metadata.route_type);
+        this.color = dataToColor(data);
         let timestamp = performance.now();
         let duration = timestamp - this.animationStart;
         if (isOnScreen) {
-            this.animationStartLatlng = this.animatedLatlng;
+            if (this.animatedLatlng) {
+                this.animationStartLatlng = this.animatedLatlng;
+            } else {
+                this.animationStartLatlng = this.realLatlng;
+            }
         } else {
             this.animationStartLatlng = this.realLatlng;
-            this.animatedLatlng = this.animationStartLatlng;
+            this.animatedLatlng = undefined;
         }
         this.realLatlng = [data.lat, data.lng];
         this.animationStart = timestamp;
