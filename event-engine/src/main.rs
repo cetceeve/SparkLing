@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
-use std::fmt::Write;
 use std::time::Duration;
-use kafka::producer::{Producer, Record, RequiredAcks};
+use redis::AsyncCommands;
 
 mod rt_gtfs_client;
 mod stream_processor;
@@ -36,18 +35,14 @@ async fn main() {
     });
     rt_gtfs_client::start_vehicle_position_clients(input_sender);
 
-    // send json serialized messages to kafka
-    let mut producer =
-        Producer::from_hosts(vec!("sparkling-kafka-bootstrap:9092".to_owned()))
-            .with_ack_timeout(Duration::from_secs(1))
-            .with_required_acks(RequiredAcks::One)
-            .create()
-            .unwrap();
+    // start redis client
+    let redis_client = redis::Client::open("redis://sparkling-redis/").unwrap();
+    let mut redis_conn = redis_client.get_tokio_connection().await.unwrap();
 
     loop {
         let item = output_receiver.recv().await.unwrap();
         let serialized = serde_json::to_vec(&item).expect("Serialisation failed.");
-        producer.send(&Record::from_value("realtime-with-metadata", serialized)).unwrap();
-        println!("{:?}", item)
+        // TODO: can we not block the loop on each item?
+        redis_conn.publish::<_,_,()>("realtime-with-metadata", serialized).await.unwrap();
     }
 }
