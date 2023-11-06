@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      volumes:
+        - name: redis-data-vol
+          persistentVolumeClaim:
+            claimName: redis-data
+      containers:
+        - name: redis
+          image: redis:7.2-bookworm
+          ports:
+            - containerPort: 6379
+          command: ["redis-server"] 
+          args: ['--save', "20", "1", "--appendonly", "no", "--loglevel", "warning"] # --requirepass <password>
+          volumeMounts:
+            - mountPath: "/data"
+              name: redis-data-vol
+          resources: 
+            requests:
+              cpu: 250m
+              memory: 500M
+            limits: 
+              cpu: 1000m
+              memory: 1000M
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sparkling-redis
+  labels:
+    name: sparkling-redis
+spec:
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+  selector:
+    app: redis
