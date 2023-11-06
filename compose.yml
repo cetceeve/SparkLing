@@ -1,30 +1,24 @@
 services:
-  sparkling-kafka-bootstrap:
-    image: docker.io/bitnami/kafka:3.5
+
+  sparkling-redis:
+    container_name: sparkling-redis
+    hostname: sparkling-redis
+    image: redis:7.2-bookworm
+    restart: on-failure
     ports:
-      - "9094:9094" # for running the webserver locally
-    #volumes:
-    #  - "kafka_data:/bitnami"
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning # --requirepass <password>
+    volumes: 
+      - redis-volume:/data
     networks:
       - sparkling-bridge
-    environment:
-      # KRaft settings
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@sparkling-kafka-bootstrap:9093
-      # Listeners
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092,EXTERNAL://localhost:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
 
   event-engine:
     container_name: event-engine
     image: fabianzeiher/sparkling-event-engine
     build: ./event-engine # careful, requires manual cargo build
     depends_on:
-      - sparkling-kafka-bootstrap
+      - sparkling-redis
     networks:
       - sparkling-bridge
     env_file:
@@ -37,11 +31,16 @@ services:
     build: ./website
     depends_on:
       - event-engine
+      - sparkling-redis
     ports:
       - "80:8080"
     networks:
       - sparkling-bridge
     restart: on-failure
+
+volumes:
+  redis-volume:
+    driver: local
 
 networks:
   sparkling-bridge:
