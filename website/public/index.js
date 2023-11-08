@@ -6,6 +6,7 @@ var vehiclesOnScreen = new Map();
 
 // holds a reference to the currently selected vehicle
 var selectedVehicle;
+var userPosition;
 
 var mapIsMoving = false; // animation is paused during map movements
 const smoothZoomLevel = 10;
@@ -55,6 +56,7 @@ canvasLayer.animate = function() {
             let ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // draw vehicles
             let pointRadius = zoomToPointRadius(layer._map.getZoom());
             vehiclesOnScreen.forEach(function(vehicle, _, _) {
                 let point;
@@ -118,6 +120,19 @@ canvasLayer.animate = function() {
                 ctx.stroke();
                 ctx.fillStyle = "black";
                 ctx.fillText(selectedVehicle.displayText, textLeft, textBottom);
+            }
+            // draw user location
+            if (userPosition) {
+                let point = layer._map.latLngToContainerPoint(userPosition.latlng);
+                ctx.fillStyle = "#24b6ff";
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 6, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.globalAlpha = 0.3;
+                ctx.arc(point.x, point.y, metersToPixels(userPosition.accuracy, map), 0, 2*Math.PI);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
             }
         }
         frameCounter++;
@@ -189,7 +204,6 @@ map.on('moveend', function(e) {
     mapIsMoving = false;
     canvasLayer.animate();
 });
-
 map.on("click", function(e) {
     let zoom = this.getZoom()
     if (zoom < clickableZoomLevel) {
@@ -208,6 +222,17 @@ map.on("click", function(e) {
         }
     });
     selectedVehicle = closestVehicle;
+});
+map.locate({watch: true});
+map.on("locationfound", function(e) {
+    let latlng = [e.latitude, e.longitude];
+    if (!userPosition) {
+        this.flyTo(latlng, 16);
+    }
+    userPosition = {
+        latlng,
+        accuracy: e.accuracy,
+    };
 });
 
 

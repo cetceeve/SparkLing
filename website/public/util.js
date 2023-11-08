@@ -35,3 +35,8 @@ function zoomToPointRadius(zoom) {
     }
     return pointRadius;
 }
+
+function metersToPixels(meters, map) {
+    let metersPerPixel = 40075016.686 * Math.abs(Math.cos(map.getCenter().lat * Math.PI/180)) / Math.pow(2, map.getZoom()+8);
+    return Math.ceil(meters / metersPerPixel);
+}
