@@ -88,7 +88,7 @@ class Vehicle {
             }
         } else {
             this.animationStartLatlng = this.realLatlng;
-            this.animatedLatlng = undefined;
+            this.animatedLatlng = null;
         }
         this.realLatlng = [data.lat, data.lng];
         this.animationStart = timestamp;

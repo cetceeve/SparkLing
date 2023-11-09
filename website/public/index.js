@@ -61,8 +61,8 @@ canvasLayer.animate = function() {
             vehiclesOnScreen.forEach(function(vehicle, _, _) {
                 let point;
                 if (vehicle.animateUntil < timestamp) {
-                    vehicle.animatedLatlng = vehicle.realLatlng;
-                    point = layer._map.latLngToContainerPoint(vehicle.animatedLatlng);
+                    vehicle.animatedLatlng = null;
+                    point = layer._map.latLngToContainerPoint(vehicle.realLatlng);
                     vehicle.containerPoint = point;
                 } else {
                     let animationDuration = vehicle.animateUntil - vehicle.animationStart;
@@ -71,8 +71,12 @@ canvasLayer.animate = function() {
                     let startPoint = layer._map.latLngToContainerPoint(vehicle.animationStartLatlng);
                     let endPoint = layer._map.latLngToContainerPoint(vehicle.realLatlng);
                     point = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
-                    vehicle.animatedLatlng = layer._map.containerPointToLatLng(point);
                     vehicle.containerPoint = point;
+                    if (animateSmooth) {
+                        vehicle.animatedLatlng = layer._map.containerPointToLatLng(point);
+                    } else {
+                        vehicle.animatedLatlng = null;
+                    }
                 }
 
                 // draw
