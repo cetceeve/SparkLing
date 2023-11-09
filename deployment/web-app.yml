@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: web-app
-        image: docker.io/fabianzeiher/sparkling-app
+        image: docker.io/jonathanarns/sparkling-app
         ports:
           - containerPort: 8080
         resources: 

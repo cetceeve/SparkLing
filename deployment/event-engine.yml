@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: event-engine
-        image: docker.io/fabianzeiher/sparkling-event-engine
+        image: docker.io/jonathanarns/sparkling-event-engine
         envFrom:
           - secretRef:
               name: api-key-secret 
