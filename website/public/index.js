@@ -223,7 +223,7 @@ map.on("click", function(e) {
     });
     selectedVehicle = closestVehicle;
 });
-map.locate({watch: true});
+map.locate({ watch: true, enableHighAccuracy: true });
 map.on("locationfound", function(e) {
     let latlng = [e.latitude, e.longitude];
     if (!userPosition) {
