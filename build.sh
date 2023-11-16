@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+if [ -z "$1" ]
+  then
+    echo "Missing target platform parameter"
+fi
 
-docker buildx build --platform=linux/amd64 -t $1/sparkling-api-client ./api_client
-docker buildx build --platform=linux/amd64 -t $1/sparkling-app ./website
-docker buildx build --platform=linux/amd64 -t $1/sparkling-py-spark -f ./spark/Dockerfile.prod ./spark
+docker buildx build --platform=$1 -t jonathanarns/sparkling-event-engine ./event-engine
+docker buildx build --platform=$1 -t jonathanarns/sparkling-app ./website
 
-docker push $1/sparkling-api-client:latest
-docker push $1/sparkling-app:latest
-docker push $1/sparkling-py-spark:latest
+docker push $2/sparkling-event-engine:latest
+docker push $2/sparkling-app:latest

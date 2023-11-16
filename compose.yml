@@ -15,7 +15,7 @@ services:
 
   event-engine:
     container_name: event-engine
-    image: fabianzeiher/sparkling-event-engine
+    image: jonathanarns/sparkling-event-engine
     build: ./event-engine # careful, requires manual cargo build
     depends_on:
       - sparkling-redis
@@ -27,7 +27,7 @@ services:
 
   web:
     container_name: web-app
-    image: fabianzeiher/sparkling-app
+    image: jonathanarns/sparkling-app
     build: ./website
     depends_on:
       - event-engine
