@@ -66,8 +66,7 @@ async fn run_client(url: String, interval: Duration, sender: UnboundedSender<Veh
             Err(e) => println!("{:?}", e),
             Ok(resp) => {
                 if let Ok(bytes) = resp.bytes().await {
-                    FeedMessage::decode(bytes.clone()).unwrap();
-                    if let Ok(msg) = FeedMessage::decode(bytes) {
+                    if let Ok(msg) = FeedMessage::decode(bytes.clone()) {
                         for entity in msg.entity {
                             if let Some(VehiclePosition {
                                 vehicle: Some(VehicleDescriptor { id: Some(id), .. }),
@@ -87,6 +86,11 @@ async fn run_client(url: String, interval: Duration, sender: UnboundedSender<Veh
                                 };
                                 sender.send(vehicle).expect("internal channel broken");
                             }
+                        }
+                    } else {
+                        println!("Protobuf Decode Error: Bytes length {}", bytes.len());
+                        if let Ok(msg) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+                            println!("{:?}", msg);
                         }
                     }
                 }
