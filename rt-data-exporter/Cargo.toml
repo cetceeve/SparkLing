@@ -1,0 +1,15 @@
+[package]
+name = "rt_data_exporter"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+csv = "1.3"
+chrono = "0.4"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11", features = ["gzip"] }
+redis = { version = "0.23", features = ["aio", "tokio-comp", "keep-alive"]}

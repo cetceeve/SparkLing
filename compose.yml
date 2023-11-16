@@ -15,7 +15,7 @@ services:
 
   event-engine:
     container_name: event-engine
-    image: jonathanarns/sparkling-event-engine
+    image: fabianzeiher/sparkling-event-engine
     build: ./event-engine # careful, requires manual cargo build
     depends_on:
       - sparkling-redis
@@ -27,7 +27,7 @@ services:
 
   web:
     container_name: web-app
-    image: jonathanarns/sparkling-app
+    image: fabianzeiher/sparkling-app
     build: ./website
     depends_on:
       - event-engine
@@ -37,6 +37,18 @@ services:
     networks:
       - sparkling-bridge
     restart: on-failure
+  
+  rt-data-exporter:
+    container_name: rt-data-exporter
+    image: fabianzeiher/sparkling-rt-data-exporter
+    build: ./rt-data-exporter
+    depends_on:
+      - event-engine
+      - sparkling-redis
+    environment:
+      - RUST_BACKTRACE=1
+    networks:
+      - sparkling-bridge
 
 volumes:
   redis-volume:
