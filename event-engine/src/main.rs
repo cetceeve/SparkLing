@@ -24,6 +24,8 @@ pub struct VehicleMetadata {
     pub route_short_name: Option<String>,
     pub route_long_name: Option<String>,
     pub trip_headsign: Option<String>,
+    pub shape_id: Option<u64>,
+    pub direction_id: Option<u32>,
 }
 
 #[tokio::main]
