@@ -50,6 +50,7 @@ kubectl apply -f deployment/redis.yml
 The command creates
 - redis deployment
 - sparkling-redis service
+- redis-data persisitent volume claim
 
 ## 3. Deploy event-engine
 Next we deploy our event-engine that handles the processing of events.

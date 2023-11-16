@@ -17,6 +17,7 @@ spec:
       containers:
       - name: event-engine
         image: docker.io/jonathanarns/sparkling-event-engine
+        imagePullPolicy: Always
         envFrom:
           - secretRef:
               name: api-key-secret 
