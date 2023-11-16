@@ -8,6 +8,12 @@ Make sure to build for amd64 architecture using docker buildx:
 docker buildx build --platform=linux/amd64 -t test-image ./test
 ```
 
+You can use the `build.sh` script in the project root.
+You can specify which architecture you need and it automatically pushed to dockerhub.
+```
+./build.sh linux/amd64
+```
+
 # Pushing images
 
 ## docker hub
@@ -36,72 +42,30 @@ This is an abosolutly crutial step on first deployment!
 kubectl create secret generic api-key-secret --from-literal=TRAFIKLAB_GTFS_RT_KEY='{paste here}' --from-literal=TRAFIKLAB_GTFS_STATIC_KEY='{paste here}'
 ```
 
-## 2. Install strimzi operator
-This installs the kafka operator into the cluster
-
-The command creates
--  strimzi-cluster-operator deployment
-
-## 3. Create a spark service account and access rules
-This service account will allow spark to create new pods for drivers and executors
+## 2. Deploy redis
+First, we need our message queue.
 ```
-kubectl apply -f deployment/spark-application-rbac.yml
-```
-This command creates
-- spark service account and associated rules
-
-## 4. Deploy kafka
-First, we need our message queue. It takes quite a while to start.
-```
-kubectl apply -f deployment/strimzi-kafka.yml
+kubectl apply -f deployment/redis.yml
 ```
 The command creates
-- zookeeper pods
-- zookeeper services
-- kafka broker pods
-- kafka broker service
-- kafka bootstrap service (we use this service name to connect from our clients)
-- entity-operator deployment
+- redis deployment
+- sparkling-redis service
 
-## 5. Deploy kafka topics
+## 3. Deploy event-engine
+Next we deploy our event-engine that handles the processing of events.
 ```
-kubectl apply -f deployment/kafka-topics
+kubectl apply -f deployment/event-engine.yml
 ```
 The command creates
-- kafka topic realtime
-- kafka topoc realtime_with_metadata
+- event-engine deployment
 
-## 6. Deploy api-client
-The spark job needs data to run, so we start the api-client next
-```
-kubectl apply -f deployment/api-client.yml
-```
-The command creates
-- api-client deployment
-
-## 7. Deploy spark
-The spark startup needs some time
-```
-kubectl apply -f deployment/spark-submit.yml
-```
-The command creates
-- spark-submit pod
-- spark pod
-- spark executor pod
-
-Use the following commands to follow the startup process
-```
-kubectl logs -f spark-submit
-kubectl logs -f spark
-```
-
-## 8. Deploy web application
+## 4. Deploy web application
 ```
 kubectl apply -f deployment/web-app.yml
 ```
 The command creates
 - web-app deployment
-- web-app load balancer service (we can use this service to reach our app from the interwebs)
+- web-app load balancer service (with our static IP)
 
 ## 9. Deploy vertical autoscalers
 
@@ -110,20 +74,14 @@ The command creates
 kubectl apply -f deployment/vertical-autoscalers.yml
 ```
 The command creates
-- api-client vertical autoscaler
+- event-engine vertical autoscaler
 - web-app vertical autoscaler
-- spark-submit vertical autoscaler
 
 # Redeployment
 
-Normally you should only need to repeat steps 5 to 8.
+Normally you should only need to repeat from step 2.
 
 # Remove deployment
 ```
 kubectl --namespace default scale deployment {my-deployment} --replicas 0
-```
-
-Remove kafka deployment
-```
-kubectl -n default delete $(kubectl get strimzi -o name -n default)
 ```
