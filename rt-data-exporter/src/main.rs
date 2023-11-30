@@ -31,6 +31,8 @@ pub struct VehicleMetadata {
     pub route_short_name: Option<String>,
     pub route_long_name: Option<String>,
     pub trip_headsign: Option<String>,
+    pub shape_id: Option<u64>,
+    pub direction_id: Option<u32>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -45,6 +47,8 @@ pub struct CsvSerializableVehicle {
     pub route_short_name: Option<String>,
     pub route_long_name: Option<String>,
     pub trip_headsign: Option<String>,
+    pub shape_id: Option<u64>,
+    pub direction_id: Option<u32>,
 }
 
 #[tokio::main]
@@ -71,7 +75,7 @@ async fn main() {
                     println!("Uploading to Google Cloud Storage...");
                     let upload_type = UploadType::Simple(Media::new(file_name));
                     let uploaded = client.upload_object(&UploadObjectRequest {
-                        bucket: "test-rt-data-archive".to_string(),
+                        bucket: "rt-archive".to_string(),
                         ..Default::default()
                     }, data, &upload_type).await;
 
@@ -98,7 +102,7 @@ async fn collect_as_csv_rows(
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut receiver = guarded_receiver.lock().await;
     // using tokio sleep with select to create a timeout function
-    const TIMEOUT: u64 = 200;
+    const TIMEOUT: u64 = 300;
     let sleep = time::sleep(Duration::from_millis(TIMEOUT));
     tokio::pin!(sleep); 
 
@@ -126,7 +130,7 @@ async fn collect_as_csv_rows(
             // called only when receiver has not received anything for a while
             () = &mut sleep => {
                 sleep.as_mut().reset(Instant::now() + Duration::from_millis(2000));
-                println!("Currently {}rows.", rows_written);
+                // println!("Currently {}rows.", rows_written);
 
                 if rows_written > min_rows {
                     // returning the underlying writers according to documentation for csv and flate2
@@ -167,6 +171,8 @@ fn make_vehicle_serializable(vehicle: Vehicle) -> CsvSerializableVehicle {
             route_short_name: metadata.route_short_name,
             route_long_name: metadata.route_long_name,
             trip_headsign: metadata.trip_headsign,
+            shape_id: metadata.shape_id,
+            direction_id: metadata.direction_id,
         },
         None => CsvSerializableVehicle {
             id: vehicle.id,
@@ -179,6 +185,8 @@ fn make_vehicle_serializable(vehicle: Vehicle) -> CsvSerializableVehicle {
             route_short_name: None,
             route_long_name: None,
             trip_headsign: None,
+            shape_id: None,
+            direction_id: None,
         },
     }
 }
