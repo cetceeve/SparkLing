@@ -47,8 +47,11 @@ services:
       - sparkling-redis
     environment:
       - RUST_BACKTRACE=1
+      - GOOGLE_APPLICATION_CREDENTIALS=/gcp/creds.json
     networks:
       - sparkling-bridge
+    volumes:
+      - $HOME/.config/gcloud/application_default_credentials.json:/gcp/creds.json:ro
 
 volumes:
   redis-volume:

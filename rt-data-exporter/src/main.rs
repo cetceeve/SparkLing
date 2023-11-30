@@ -1,5 +1,7 @@
 use chrono::prelude::*;
 use csv::Writer;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use redis::{self, PubSubCommands};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -7,6 +9,9 @@ use std::sync::Arc;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::sync::Mutex;
 use tokio::time::{self, Duration, Instant};
+use google_cloud_storage::client::{ClientConfig, Client};
+use google_cloud_storage::http::objects::upload::{Media, UploadObjectRequest, UploadType};
+
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Vehicle {
@@ -50,27 +55,55 @@ async fn main() {
 
     let guarded_recv = Arc::new(Mutex::new(receiver));
     loop {
-        let date = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
-        let file_name = format!("{date}-rt-data.csv");
-        match write_single_file(guarded_recv.clone(), file_name.clone(), 1000000).await {
+        let date = Utc::now().format("%Y-%m-%dT%H_%M_%S").to_string();
+        let file_name = format!("{date}-rt-data.csv.gz");
+        match collect_as_csv_rows(guarded_recv.clone(), 1000000).await {
             Err(_) => {}
-            Ok(()) => println!("Finished writing file: {}", file_name),
+            Ok(data) => {
+                println!("Finished collecting rows for: {}", file_name);
+
+                // spawning an async task to upload the csv data to google cloud storage
+                tokio::task::spawn( async move {
+                    // authenticate using Application Default Credentials
+                    let config = ClientConfig::default().with_auth().await.unwrap();
+                    let client = Client::new(config);
+
+                    println!("Uploading to Google Cloud Storage...");
+                    let upload_type = UploadType::Simple(Media::new(file_name));
+                    let uploaded = client.upload_object(&UploadObjectRequest {
+                        bucket: "test-rt-data-archive".to_string(),
+                        ..Default::default()
+                    }, data, &upload_type).await;
+
+                    
+                    match uploaded {
+                        Ok(storage_object) => {
+                            println!("Upload successfull!");
+                            println!("{:?}", storage_object)
+                        },
+                        Err(err) => {
+                            println!("Upload failed.");
+                            println!("{:?}", err);
+                        }
+                    };
+                });
+        },
         }
     }
 }
 
-async fn write_single_file(
+async fn collect_as_csv_rows(
     guarded_receiver: Arc<Mutex<UnboundedReceiver<String>>>,
-    file_name: String,
     min_rows: u64,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut receiver = guarded_receiver.lock().await;
     // using tokio sleep with select to create a timeout function
-    const TIMEOUT: u64 = 500;
+    const TIMEOUT: u64 = 200;
     let sleep = time::sleep(Duration::from_millis(TIMEOUT));
-    tokio::pin!(sleep);
+    tokio::pin!(sleep); 
 
-    let mut wtr = Writer::from_path(file_name)?;
+    let encoder = GzEncoder::new(Vec::new(), Compression::default());
+    let mut wtr = Writer::from_writer(encoder);
 
     let mut rows_written = 0;
     loop {
@@ -92,16 +125,13 @@ async fn write_single_file(
             },
             // called only when receiver has not received anything for a while
             () = &mut sleep => {
-                match wtr.flush() {
-                    Err(_) => println!("CSV Writer: Error while flushing to disk"),
-                    Ok(()) => {
-                        println!("{}: flushed to disc after {}ms of inactivity. Currently {}rows.", Utc::now(), TIMEOUT, rows_written);
-                        sleep.as_mut().reset(Instant::now() + Duration::from_millis(2000));
+                sleep.as_mut().reset(Instant::now() + Duration::from_millis(2000));
+                println!("Currently {}rows.", rows_written);
 
-                        if rows_written > min_rows {
-                            return Ok(());
-                        }
-                    },
+                if rows_written > min_rows {
+                    // returning the underlying writers according to documentation for csv and flate2
+                    // automatically flushes to the underlying writers
+                    return Ok(wtr.into_inner()?.finish()?);
                 }
             },
         }

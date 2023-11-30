@@ -30,7 +30,7 @@ ARG my_appname
 ENV my_appname=$my_appname
 
 # install OS dependencies
-# RUN apt-get update && apt-get install -y ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
 
 # copy the build artifact from the build stage
 COPY --from=build /${my_appname}/target/release/${my_appname} /usr/local/bin/${my_appname}
