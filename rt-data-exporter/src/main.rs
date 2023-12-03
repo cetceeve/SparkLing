@@ -56,6 +56,11 @@ async fn main() {
     // oneshot channel to get data to the writer thread
     let (sender, receiver) = mpsc::unbounded_channel::<String>();
     tokio::task::spawn(async move { redis_subscriber(sender).await });
+    println!("Authenticating using Default Application Credentials");
+    let config = ClientConfig::default().with_auth().await.unwrap();
+    let _test_client = Client::new(config);
+    println!("Storage authentication successfull");
+    drop(_test_client);
 
     let guarded_recv = Arc::new(Mutex::new(receiver));
     loop {
@@ -68,7 +73,6 @@ async fn main() {
 
                 // spawning an async task to upload the csv data to google cloud storage
                 tokio::task::spawn( async move {
-                    // authenticate using Application Default Credentials
                     let config = ClientConfig::default().with_auth().await.unwrap();
                     let client = Client::new(config);
 
@@ -78,8 +82,7 @@ async fn main() {
                         bucket: "rt-archive".to_string(),
                         ..Default::default()
                     }, data, &upload_type).await;
-
-                    
+                
                     match uploaded {
                         Ok(storage_object) => {
                             println!("Upload successfull!");
@@ -89,12 +92,13 @@ async fn main() {
                             println!("Upload failed.");
                             println!("{:?}", err);
                         }
-                    };
+                    }
                 });
-        },
+            }
         }
     }
 }
+           
 
 async fn collect_as_csv_rows(
     guarded_receiver: Arc<Mutex<UnboundedReceiver<String>>>,
@@ -130,7 +134,7 @@ async fn collect_as_csv_rows(
             // called only when receiver has not received anything for a while
             () = &mut sleep => {
                 sleep.as_mut().reset(Instant::now() + Duration::from_millis(2000));
-                // println!("Currently {}rows.", rows_written);
+                println!("Currently {}rows.", rows_written);
 
                 if rows_written > min_rows {
                     // returning the underlying writers according to documentation for csv and flate2

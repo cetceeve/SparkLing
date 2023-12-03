@@ -6,8 +6,8 @@ fi
 
 docker buildx build --platform=$1 -t jonathanarns/sparkling-event-engine ./event-engine
 docker buildx build --platform=$1 -t jonathanarns/sparkling-app ./website
-docker buildx build --platform=$1 -t jonathanarns/sparkling-rt-data-exporter ./rt-data-exporter
+docker buildx build --platform=$1 -t fabianzeiher/sparkling-rt-data-exporter ./rt-data-exporter
 
 docker push jonathanarns/sparkling-event-engine:latest
 docker push jonathanarns/sparkling-app:latest
-docker push jonathanarns/sparkling-rt-data-exporter:latest
+docker push fabianzeiher/sparkling-rt-data-exporter:latest
