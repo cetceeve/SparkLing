@@ -40,15 +40,15 @@ aggregate_df["compound_route_id"] = aggregate_df[["agency_name", "route_short_na
 df = df.merge(aggregate_df[["compound_route_id", "route_id"]].drop_duplicates(), on="compound_route_id", how="inner")
 
 # make sure we only have one trip per vehicle in this batch, to simplify further processing
-counts_df = df[["id", "trip_id", "lng"]].groupby(by=["id", "trip_id"]).count()
+counts_df = df[["id", "trip_id", "lng"]].groupby(by=["id", "trip_id"], as_index=False).count()
 counts_df = counts_df.sort_values(by="lng").drop_duplicates(subset=["id"])
 df = df[df["trip_id"].isin(counts_df["trip_id"])]
 
 # attach stop information for events at stops
-# TODO: is 30m the correct distance threshold?
+# TODO: is 100m the correct distance threshold? - seems okay at first glance at the output - 30m was too low
 tmp_df = df.merge(stop_seq_df, on=["route_id", "direction_id"], how="left")
 tmp_df["distance"] = gpd.GeoSeries.from_xy(tmp_df["lng"], tmp_df["lat"], crs="EPSG:4326").to_crs(epsg=3763).distance(gpd.GeoSeries.from_xy(tmp_df["stop_lon"], tmp_df["stop_lat"], crs="EPSG:4326").to_crs(epsg=3763))
-tmp_df = tmp_df[tmp_df["distance"] <= 30.0].drop_duplicates(subset=["id", "timestamp"])
+tmp_df = tmp_df[tmp_df["distance"] <= 100.0].drop_duplicates(subset=["id", "timestamp"])
 tmp_df = tmp_df[["id", "timestamp", "stop_id", "stop_name", "stop_lat", "stop_lon", "stop_sequence", "distance", "shape_dist_traveled"]]
 df = df.merge(tmp_df, on=["id", "timestamp"], how="left")
 
@@ -79,5 +79,5 @@ df = df.merge(vehicle_df[["id", "prev_vehicle_id", "time_delta"]], on="id", how=
 features = []
 
 
-print(df[["distance", "stop_sequence", "lng", "lat", "route_id", "direction_id", "shape_dist_traveled", "datetime", "time_delta"]])
-
+print(df[["id", "distance", "stop_sequence", "lng", "lat", "route_id", "direction_id", "shape_dist_traveled", "datetime", "time_delta"]])
+# df[df["id"] == 9031008020600368][["datetime", "timestamp", "time_delta", "stop_sequence", "stop_name"]].sort_values(by="timestamp").to_csv("test.csv", index=False)
