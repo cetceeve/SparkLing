@@ -39,6 +39,11 @@ df["compound_route_id"] = df[["agency_name", "route_short_name", "route_long_nam
 aggregate_df["compound_route_id"] = aggregate_df[["agency_name", "route_short_name", "route_long_name"]].astype(str).agg("|".join, axis=1)
 df = df.merge(aggregate_df[["compound_route_id", "route_id"]].drop_duplicates(), on="compound_route_id", how="inner")
 
+# make sure we only have one trip per vehicle in this batch, to simplify further processing
+counts_df = df[["id", "trip_id", "lng"]].groupby(by=["id", "trip_id"]).count()
+counts_df = counts_df.sort_values(by="lng").drop_duplicates(subset=["id"])
+df = df[df["trip_id"].isin(counts_df["trip_id"])]
+
 # attach stop information for events at stops
 # TODO: is 30m the correct distance threshold?
 tmp_df = df.merge(stop_seq_df, on=["route_id", "direction_id"], how="left")
@@ -64,6 +69,7 @@ vehicle_df = vehicle_df.sort_values(by="sort_key")
 vehicle_df = vehicle_df.drop_duplicates(subset=["id_x"], keep="first")
 vehicle_df = vehicle_df.rename(columns={"id_x": "id", "id_y": "prev_vehicle_id"})
 df = df.merge(vehicle_df[["id", "prev_vehicle_id", "time_delta"]], on="id", how="left")
+# TODO: we don't need the most recent time_delta globally, but the locally most recent one :(
 
 # attach labels to data (actual time to stop)
 # df = df.dropna(subset="time_delta")
