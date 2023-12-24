@@ -20,6 +20,9 @@ def aggregate_gtfs_static_sweden(cloud_event):
     myzip = ZipFile(BytesIO(resp.read()))
     print("downloaded file")
 
+    # For local development
+    # myzip = ZipFile("./Archive.zip")
+
     with myzip.open("trips.txt") as f:
         trips_df = pd.read_csv(f, dtype={
             "route_id": str,
@@ -40,6 +43,7 @@ def aggregate_gtfs_static_sweden(cloud_event):
             "route_long_name": str,
             "route_desc": str,
         })
+        routes_df = routes_df[["route_id", "agency_id", "route_type", "route_short_name", "route_long_name"]]
 
     with myzip.open("agency.txt") as f:
         agency_df = pd.read_csv(f, dtype={
@@ -50,27 +54,52 @@ def aggregate_gtfs_static_sweden(cloud_event):
             "agency_lang": str,
             "agency_fare_url": str,
         })
+        agency_df = agency_df[["agency_id", "agency_name"]]
 
     with myzip.open("stop_times.txt") as f:
-        trip_headsign_df = pd.read_csv(f, dtype={
+        stop_times_df = pd.read_csv(f, dtype={
             "trip_id": np.int64,
             "stop_id": np.int64,
+            "stop_sequence": np.int64,
+            "arrival_time": str,
+            "departure_time": str,
             "stop_headsign": str,
-        }).drop_duplicates("trip_id", keep="first")
-        trip_headsign_df.rename(columns={"stop_headsign": "trip_headsign"}, inplace=True)
-    
+            "shape_dist_traveled": np.float64,
+        })
+        stop_times_df.rename(columns={"stop_headsign": "trip_headsign"}, inplace=True)
+
+    with myzip.open("stops.txt") as f:
+        stops_df = pd.read_csv(f, dtype={
+            "stop_id": np.int64,
+            "stop_name": str,
+            "stop_lat": np.float64,
+            "stop_lon": np.float64,
+        })
+        stops_df = stops_df[["stop_id", "stop_name", "stop_lat", "stop_lon"]]
+
+    # create df with stop sequence for each route
+    # we don't merge directly on trips because trips could skip stops
+    # using this all routes will have the same stops
+    stop_seq_df = trips_df \
+        .merge(stop_times_df, on="trip_id") \
+        .drop_duplicates(subset=["route_id", "direction_id", "stop_sequence"]) \
+        .merge(stops_df, on="stop_id")
+    stop_seq_df = stop_seq_df[["route_id", "direction_id", "trip_headsign", "stop_id", "stop_name", "stop_lat", "stop_lon", "stop_sequence", "shape_dist_traveled"]]
+    # print(stop_seq_df.shape)    
+
     aggregated_df = trips_df \
-        .merge(trip_headsign_df, on="trip_id", how="outer") \
+        .merge(stop_seq_df, on=["route_id", "direction_id"]) \
         .merge(routes_df, on="route_id", how="left") \
         .merge(agency_df, on="agency_id", how="left")
-
-    final_df = aggregated_df[["trip_id", "agency_name", "route_short_name", "route_long_name", "route_type", "trip_headsign", "shape_id", "direction_id", "route_id"]]
+    # print("aggregated: ", aggregated_df.shape)
+    # print(aggregated_df.columns)
+    # aggregated_df.to_csv("aggregated.csv")
 
     storage_client = storage.Client()
     bucket = storage_client.bucket("gtfs_static")
     blob = bucket.blob("sweden_aggregated_metadata.csv")
 
-    contents = final_df.to_csv(index=False, encoding="utf-8")
+    contents = aggregated_df.to_csv(index=False, encoding="utf-8")
     blob.upload_from_string(bytes(contents, "utf-8"))
 
     print("======================================")
