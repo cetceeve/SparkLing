@@ -10,18 +10,18 @@ import os
 
 @functions_framework.cloud_event
 def aggregate_gtfs_static_sweden(cloud_event):
-    # TRAFIKLAB_GTFS_STATIC_KEY = os.environ.get("TRAFIKLAB_GTFS_STATIC_KEY", "Specified environment variable is not set.")
-    # print(TRAFIKLAB_GTFS_STATIC_KEY)
-    # print("downloading gtfs static sweden...")
-    # req = Request(f"https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip?key={TRAFIKLAB_GTFS_STATIC_KEY}")
-    # req.add_header("accept", "application/octet-stream")
-    # req.add_header("accept-encoding", "gzip")
-    # resp = urlopen(req)
-    # myzip = ZipFile(BytesIO(resp.read()))
-    # print("downloaded file")
+    TRAFIKLAB_GTFS_STATIC_KEY = os.environ.get("TRAFIKLAB_GTFS_STATIC_KEY", "Specified environment variable is not set.")
+    print(TRAFIKLAB_GTFS_STATIC_KEY)
+    print("downloading gtfs static sweden...")
+    req = Request(f"https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip?key={TRAFIKLAB_GTFS_STATIC_KEY}")
+    req.add_header("accept", "application/octet-stream")
+    req.add_header("accept-encoding", "gzip")
+    resp = urlopen(req)
+    myzip = ZipFile(BytesIO(resp.read()))
+    print("downloaded raw data")
 
     # For local development
-    myzip = ZipFile("./Archive.zip")
+    # myzip = ZipFile("./Archive.zip")
 
     with myzip.open("trips.txt") as f:
         trips_df = pd.read_csv(f, dtype={
@@ -80,6 +80,7 @@ def aggregate_gtfs_static_sweden(cloud_event):
     # create df with stop sequence for each route
     # we don't merge directly on trips because trips could skip stops
     # using this all routes will have the same stops
+    # when we merge the departure and arrival times on trop_id some stops will have NaN
     stop_seq_df = trips_df \
         .merge(stop_times_df, on="trip_id") \
         .drop_duplicates(subset=["route_id", "direction_id", "stop_sequence"]) \
@@ -93,10 +94,11 @@ def aggregate_gtfs_static_sweden(cloud_event):
         .merge(stop_seq_df, on=["route_id", "direction_id"], how="left") \
         .merge(stop_times_df[["trip_id", "stop_id", "arrival_time", "departure_time"]], on=["trip_id", "stop_id"], how="left")
     
-    print("trips: ", trips_df.shape)
-    print("aggregated: ", aggregated_df.shape)
+    # print("trips: ", trips_df.shape)
+    # print("aggregated: ", aggregated_df.shape)
     # print(f"With Arrival Time: {aggregated_df[['arrival_time']].count().iloc[0]}/{aggregated_df.shape[0]}")
     
+    # Store all stops as lists in the csv to reduce file size and easy merging
     final_df = aggregated_df.groupby(by=["trip_id"], as_index=False).agg({
         "shape_id": "first",
         "route_id": "first",
@@ -118,16 +120,19 @@ def aggregate_gtfs_static_sweden(cloud_event):
     })
 
     print("Final: ", final_df.shape)    
-    print(final_df.columns)
-    final_df.to_csv("aggregated.csv.gz", compression="gzip")
+    # print(final_df.columns)
+    
+    # Compress output to safe over 90% storage space 
+    # time or writing: 860MB uncompressed, 57MB compressed
+    contents = BytesIO()
+    final_df.to_csv(contents, index=False, encoding="utf-8", compression="gzip")
+    # with open("test.csv.gz", mode="wb") as f:
+    #     f.write(contents.getbuffer())
 
-
-    # storage_client = storage.Client()
-    # bucket = storage_client.bucket("gtfs_static")
-    # blob = bucket.blob("sweden_aggregated_metadata.csv")
-
-    # contents = aggregated_df.to_csv(index=False, encoding="utf-8")
-    # blob.upload_from_string(bytes(contents, "utf-8"))
+    storage_client = storage.Client()
+    bucket = storage_client.bucket("gtfs_static")
+    blob = bucket.blob("sweden_aggregated_metadata.csv.gz")
+    blob.upload_from_file(contents, rewind=True)
 
     print("======================================")
     print("refreshed static GTFS Sweden aggregate")
