@@ -68,6 +68,10 @@ impl FeatureExtractor {
                         if measure_distance(stop.stop_lat, stop.stop_lon, vehicle.lat, vehicle.lng) < STOP_DETECT_DISTANCE {
                             // TODO: attach previous stops' real_time before
                             stop.real_time = Some(vehicle.timestamp);
+                            if let Some((prev, _ts)) = self.last_vehicle_at_stop.get(&(stop.stop_id.clone(), vehicle_metadata.route_id.clone().unwrap(), vehicle_metadata.direction_id.clone().unwrap())) {
+                                self.prev_vehicle.insert(vehicle.id.clone(), Rc::clone(prev));
+                                self.next_vehicle.insert(prev.borrow().id.clone(), Rc::clone(&vehicle_rc));
+                            }
                             self.last_vehicle_at_stop.insert(
                                 (stop.stop_id.clone(), vehicle_metadata.route_id.clone().unwrap(), vehicle_metadata.direction_id.clone().unwrap()),
                                 (Rc::clone(&vehicle_rc), vehicle.timestamp)
