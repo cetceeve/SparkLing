@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
-use std::time::Duration;
 use redis::AsyncCommands;
 
 mod rt_gtfs_client;
@@ -25,7 +24,23 @@ pub struct VehicleMetadata {
     pub route_long_name: Option<String>,
     pub trip_headsign: Option<String>,
     pub shape_id: Option<u64>,
-    pub direction_id: Option<u32>,
+    pub route_id: Option<String>, // TODO: make some of these not optional
+    pub direction_id: Option<u8>,
+    pub stops: Option<Vec<Stop>>, // sorted by stop_sequence
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Stop {
+    pub stop_sequence: u16,
+    pub stop_id: String,
+    pub direction_id: u8,
+    pub stop_name: String,
+    pub scheduled_time: u64,
+    pub real_time: Option<u64>, // maybe seperate data structure
+    pub stop_lat: f32,
+    pub stop_lon: f32,
+    pub route_id: String,
+    pub shape_dist_traveled: f32,
 }
 
 #[tokio::main]

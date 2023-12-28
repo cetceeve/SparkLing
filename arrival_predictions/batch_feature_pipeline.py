@@ -41,7 +41,7 @@ df = df.merge(aggregate_df[["compound_route_id", "route_id"]].drop_duplicates(),
 
 # make sure we only have one trip per vehicle in this batch, to simplify further processing
 counts_df = df[["id", "trip_id", "lng"]].groupby(by=["id", "trip_id"], as_index=False).count()
-counts_df = counts_df.sort_values(by="lng").drop_duplicates(subset=["id"])
+counts_df = counts_df.sort_values(by="lng").drop_duplicates(subset=["id"], keep="last")
 df = df[df["trip_id"].isin(counts_df["trip_id"])]
 
 # attach stop information for events at stops
@@ -51,6 +51,8 @@ tmp_df["distance"] = gpd.GeoSeries.from_xy(tmp_df["lng"], tmp_df["lat"], crs="EP
 tmp_df = tmp_df[tmp_df["distance"] <= 100.0].drop_duplicates(subset=["id", "timestamp"])
 tmp_df = tmp_df[["id", "timestamp", "stop_id", "stop_name", "stop_lat", "stop_lon", "stop_sequence", "distance", "shape_dist_traveled"]]
 df = df.merge(tmp_df, on=["id", "timestamp"], how="left")
+# TODO: add last_stop and possibly others
+df["last_stop_id"] = df["stop_id"].groupby(...).ffill()
 
 # find previous vehicle on same route
 vehicle_df = df[["id", "route_id", "direction_id", "timestamp", "stop_id"]]
@@ -64,7 +66,6 @@ vehicle_df["time_delta"] = vehicle_df["timestamp_x"] - vehicle_df["timestamp_y"]
 # we use this sort key to get the directly previous vehicle, but specifically keep the row with the most recent stop that both have reached
 # so that we get the most recent time_delta
 vehicle_df["sort_key"] = vehicle_df["time_delta"] - (vehicle_df["timestamp_x"] * 100000)
-# vehicle_df = vehicle_df[vehicle_df["time_delta"] > 10]
 vehicle_df = vehicle_df.sort_values(by="sort_key")
 vehicle_df = vehicle_df.drop_duplicates(subset=["id_x"], keep="first")
 vehicle_df = vehicle_df.rename(columns={"id_x": "id", "id_y": "prev_vehicle_id"})
@@ -80,4 +81,4 @@ features = []
 
 
 print(df[["id", "distance", "stop_sequence", "lng", "lat", "route_id", "direction_id", "shape_dist_traveled", "datetime", "time_delta"]])
-# df[df["id"] == 9031008020600368][["datetime", "timestamp", "time_delta", "stop_sequence", "stop_name"]].sort_values(by="timestamp").to_csv("test.csv", index=False)
+# df[df["id"] == 9031008020600368][["datetime", "timestamp", "time_delta", "stop_sequence", "distance", "stop_name"]].sort_values(by="timestamp").to_csv("test.csv", index=False)

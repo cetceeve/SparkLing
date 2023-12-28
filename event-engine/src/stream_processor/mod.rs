@@ -1,6 +1,8 @@
 use crate::Vehicle;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
+mod feature_pipeline;
+mod inference_pipeline;
 mod metadata_join;
 use metadata_join::MetadataJoiner;
 
