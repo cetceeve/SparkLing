@@ -20,12 +20,26 @@ pub struct Vehicle {
 pub struct VehicleMetadata {
     pub trip_id: String,
     pub route_type: Option<u64>,
+    pub route_id: Option<String>,
     pub agency_name: Option<String>,
     pub route_short_name: Option<String>,
     pub route_long_name: Option<String>,
     pub trip_headsign: Option<String>,
     pub shape_id: Option<u64>,
     pub direction_id: Option<u32>,
+    pub stops: Option<Vec<Stop>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Stop {
+    pub stop_id: u64,
+    pub stop_name: String,
+    pub stop_sequence: u8,
+    pub stop_lat: f64,
+    pub stop_lon: f64,
+    pub arrival_time: Option<String>,
+    pub departure_time: Option<String>,
+    pub shape_dist_traveled: f64,
 }
 
 #[tokio::main]
