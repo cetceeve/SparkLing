@@ -15,6 +15,7 @@ reqwest = { version = "0.11", features = ["gzip"] }
 chrono = "0.4"
 prost = "0.12"
 redis = { version = "0.23", features = ["aio", "tokio-comp", "keep-alive"]}
+flate2 = "1.0.28"
 
 
 [build-dependencies]

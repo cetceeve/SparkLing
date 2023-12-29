@@ -1,9 +1,10 @@
 use crate::{Vehicle, VehicleMetadata, Stop};
 use anyhow::Result;
 use csv;
+use flate2::read::GzDecoder;
 use reqwest;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, process::exit};
+use std::{collections::HashMap, io::Read};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IntermediateVehicleMetadata {
@@ -65,7 +66,7 @@ impl MetadataJoiner {
     }
 }
 
-fn desierialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
+fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
     let stop_ids: Vec<u64> = if let Some(series) = raw_item.stop_id {
         series.split("|").map(|x| x.parse::<u64>().unwrap()).collect()
     } else { Vec::default() };
@@ -113,6 +114,7 @@ fn desierialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata 
        });
        i = i + 1;
     };
+
     VehicleMetadata {
         trip_id: raw_item.trip_id,
         shape_id: raw_item.shape_id,
@@ -128,21 +130,27 @@ fn desierialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata 
 }
 
 async fn download_table() -> Result<HashMap<String, VehicleMetadata>> {
-    // let text =
-    //     reqwest::get("https://storage.googleapis.com/gtfs_static/sweden_aggregated_metadata.csv")
-    //         .await?
-    //         .text()
-    //         .await?;
+    let body =
+        reqwest::get("https://storage.googleapis.com/gtfs_static/sweden_aggregated_metadata.csv.gz")
+            .await?
+            .bytes()
+            .await?
+            .to_vec();
+
+    // Explisitly decompress the gziped body because there is no content-encoding: gzip header on the response
+    let mut buffer: Vec<u8> = Vec::default();
+    let mut decoder = GzDecoder::new(body.as_slice());
+    // Keep it as bytes since the csv reader deserializes from bytes anyway
+    decoder.read_to_end(&mut buffer)?;
+
     let mut table = HashMap::<String, VehicleMetadata>::default();
-    // for result in csv::Reader::from_reader(text.as_bytes()).deserialize() {
-    for result in csv::Reader::from_path("../env/sweden_aggregated_metadata.csv")?.deserialize() {
+    for result in csv::Reader::from_reader(buffer.as_slice()).deserialize() {
         let raw_item: IntermediateVehicleMetadata = result?;
         // println!("{:?}", raw_item);
-        let item = desierialize_stops(raw_item);
+        let item = deserialize_stops(raw_item);
         // print!("{:?}", item);
         table.insert(item.trip_id.clone(), item);
     }
     println!("Downloaded metadata table");
-    exit(0);
     Ok(table)
 }

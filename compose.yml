@@ -16,11 +16,13 @@ services:
   event-engine:
     container_name: event-engine
     image: fabianzeiher/sparkling-event-engine
-    build: ./event-engine # careful, requires manual cargo build
+    build: ./event-engine 
     depends_on:
       - sparkling-redis
     networks:
       - sparkling-bridge
+    environment:
+      - RUST_BACKTRACE=1
     env_file:
       - .env
     restart: on-failure
@@ -38,20 +40,20 @@ services:
       - sparkling-bridge
     restart: on-failure
   
-  rt-data-exporter:
-    container_name: rt-data-exporter
-    image: fabianzeiher/sparkling-rt-data-exporter
-    build: ./rt-data-exporter
-    depends_on:
-      - event-engine
-      - sparkling-redis
-    environment:
-      - RUST_BACKTRACE=1
-      - GOOGLE_APPLICATION_CREDENTIALS=/gcp/creds.json
-    networks:
-      - sparkling-bridge
-    volumes:
-      - $HOME/.config/gcloud/application_default_credentials.json:/gcp/creds.json:ro
+  # rt-data-exporter:
+  #   container_name: rt-data-exporter
+  #   image: fabianzeiher/sparkling-rt-data-exporter
+  #   build: ./rt-data-exporter
+  #   depends_on:
+  #     - event-engine
+  #     - sparkling-redis
+  #   environment:
+  #     - RUST_BACKTRACE=1
+  #     - GOOGLE_APPLICATION_CREDENTIALS=/gcp/creds.json
+  #   networks:
+  #     - sparkling-bridge
+  #   volumes:
+  #     - $HOME/.config/gcloud/application_default_credentials.json:/gcp/creds.json:ro
 
 volumes:
   redis-volume:
