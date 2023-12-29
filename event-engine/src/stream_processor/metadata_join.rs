@@ -4,6 +4,8 @@ use csv;
 use reqwest;
 use std::collections::HashMap;
 
+use super::ProcessingStep;
+
 pub struct MetadataJoiner {
     table: HashMap<String, VehicleMetadata>,
 }
@@ -14,10 +16,15 @@ impl MetadataJoiner {
             table: download_table().await.unwrap(),
         }
     }
+}
 
-    pub fn join_metadata(&self, vehicle: &mut Vehicle) {
+impl ProcessingStep for MetadataJoiner {
+    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> bool {
         if let Some(ref trip_id) = vehicle.trip_id {
             vehicle.metadata = self.table.get(trip_id).map(|x| x.to_owned());
+            true
+        } else {
+            false
         }
     }
 }

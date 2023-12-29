@@ -47,8 +47,9 @@ pub struct Stop {
 async fn main() {
     let (input_sender, input_receiver) = mpsc::unbounded_channel::<Vehicle>();
     let (output_sender, mut output_receiver) = mpsc::unbounded_channel::<Vehicle>();
+    let mut processor = stream_processor::StreamProcessor::default().await;
     tokio::task::spawn(async move {
-        stream_processor::process_vehicle_stream(input_receiver, output_sender).await
+        processor.run(input_receiver, output_sender).await
     });
     rt_gtfs_client::start_vehicle_position_clients(input_sender);
 
