@@ -1,6 +1,6 @@
+use chrono::NaiveTime;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
-use std::time::Duration;
 use redis::AsyncCommands;
 
 mod rt_gtfs_client;
@@ -20,34 +20,36 @@ pub struct Vehicle {
 pub struct VehicleMetadata {
     pub trip_id: String,
     pub route_type: Option<u64>,
-    pub route_id: Option<String>,
     pub agency_name: Option<String>,
     pub route_short_name: Option<String>,
     pub route_long_name: Option<String>,
     pub trip_headsign: Option<String>,
     pub shape_id: Option<u64>,
-    pub direction_id: Option<u32>,
-    pub stops: Option<Vec<Stop>>,
+    pub route_id: Option<String>, // TODO: make some of these not optional
+    pub direction_id: Option<u8>,
+    pub stops: Option<Vec<Stop>>, // sorted by stop_sequence
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Stop {
-    pub stop_id: u64,
+    pub stop_sequence: u16,
+    pub stop_id: String,
     pub stop_name: String,
-    pub stop_sequence: u8,
-    pub stop_lat: f64,
-    pub stop_lon: f64,
     pub arrival_time: Option<String>,
     pub departure_time: Option<String>,
-    pub shape_dist_traveled: f64,
+    pub real_time: Option<u64>, // maybe seperate data structure
+    pub stop_lat: f32,
+    pub stop_lon: f32,
+    pub shape_dist_traveled: f32,
 }
 
 #[tokio::main]
 async fn main() {
     let (input_sender, input_receiver) = mpsc::unbounded_channel::<Vehicle>();
     let (output_sender, mut output_receiver) = mpsc::unbounded_channel::<Vehicle>();
+    let mut processor = stream_processor::StreamProcessor::default().await;
     tokio::task::spawn(async move {
-        stream_processor::process_vehicle_stream(input_receiver, output_sender).await
+        processor.run(input_receiver, output_sender).await
     });
     rt_gtfs_client::start_vehicle_position_clients(input_sender);
 

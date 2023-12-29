@@ -16,7 +16,7 @@ pub struct IntermediateVehicleMetadata {
     pub route_long_name: Option<String>,
     pub trip_headsign: Option<String>,
     pub shape_id: Option<u64>,
-    pub direction_id: Option<u32>,
+    pub direction_id: Option<u8>,
     pub stop_id: Option<String>,
     pub stop_name: Option<String>,
     pub stop_sequence: Option<String>,
@@ -48,6 +48,8 @@ pub struct DeserializedVehicleMetadata {
     pub shape_dist_traveled: Option<Vec<f64>>,
 }
 
+use super::ProcessingStep;
+
 pub struct MetadataJoiner {
     table: HashMap<String, VehicleMetadata>,
 }
@@ -58,33 +60,38 @@ impl MetadataJoiner {
             table: download_table().await.unwrap(),
         }
     }
+}
 
-    pub fn join_metadata(&self, vehicle: &mut Vehicle) {
+impl ProcessingStep for MetadataJoiner {
+    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> bool {
         if let Some(ref trip_id) = vehicle.trip_id {
             vehicle.metadata = self.table.get(trip_id).map(|x| x.to_owned());
+            true
+        } else {
+            false
         }
     }
 }
 
 fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
-    let stop_ids: Vec<u64> = if let Some(series) = raw_item.stop_id {
-        series.split("|").map(|x| x.parse::<u64>().unwrap()).collect()
+    let stop_ids: Vec<String> = if let Some(series) = raw_item.stop_id {
+        series.split("|").map(|x| x.to_owned()).collect()
     } else { Vec::default() };
 
     let stop_names: Vec<String> = if let Some(series) = raw_item.stop_name {
         series.split("|").map(|x| x.to_owned()).collect()
     } else { Vec::default() };
     
-    let stop_lats: Vec<f64> = if let Some(series) = raw_item.stop_lat {
-        series.split("|").map(|x| x.parse::<f64>().unwrap()).collect()
+    let stop_lats: Vec<f32> = if let Some(series) = raw_item.stop_lat {
+        series.split("|").map(|x| x.parse::<f32>().unwrap()).collect()
     } else { Vec::default() };
     
-    let stop_lons: Vec<f64> = if let Some(series) = raw_item.stop_lon {
-        series.split("|").map(|x| x.parse::<f64>().unwrap()).collect()
+    let stop_lons: Vec<f32> = if let Some(series) = raw_item.stop_lon {
+        series.split("|").map(|x| x.parse::<f32>().unwrap()).collect()
     } else { Vec::default() }; 
     
-    let stop_sequences: Vec<u8> = if let Some(series) = raw_item.stop_sequence {
-        series.split("|").map(|x| x.parse::<u8>().unwrap()).collect()
+    let stop_sequences: Vec<u16> = if let Some(series) = raw_item.stop_sequence {
+        series.split("|").map(|x| x.parse::<u16>().unwrap()).collect()
     } else { Vec::default() };
     
     let arrival_times: Vec<Option<String>> = if let Some(series) = raw_item.arrival_time {
@@ -95,21 +102,22 @@ fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
         series.split("|").map(|x| if x == "nan" { None } else { Some (x.to_owned()) }).collect()
     } else { Vec::default() };
     
-    let shape_dist_traveleds: Vec<f64> = if let Some(series) = raw_item.shape_dist_traveled {
-        series.split("|").map(|x| x.parse::<f64>().unwrap()).collect()
+    let shape_dist_traveleds: Vec<f32> = if let Some(series) = raw_item.shape_dist_traveled {
+        series.split("|").map(|x| x.parse::<f32>().unwrap()).collect()
     } else { Vec::default() };
 
     let mut stops: Vec<Stop> = Vec::default();
     let mut i = 0;
     while i < stop_ids.len() {
        stops.insert(i, Stop {
-        stop_id: stop_ids[i],
+        stop_id: stop_ids[i].to_owned(),
         stop_name: stop_names[i].to_owned(),
         stop_lat: stop_lats[i],
         stop_lon: stop_lons[i],
         stop_sequence: stop_sequences[i],
         arrival_time: arrival_times[i].to_owned(),
         departure_time: departure_times[i].to_owned(),
+        real_time: None,
         shape_dist_traveled: shape_dist_traveleds[i],
        });
        i = i + 1;
