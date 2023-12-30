@@ -1,12 +1,59 @@
 use crate::{Vehicle, VehicleMetadata};
-use anyhow::Result;
-use csv;
+use anyhow::{Result, bail};
+use chrono::{NaiveDateTime, Timelike, Datelike};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::f32::consts::PI;
 
 static STOP_DETECT_DISTANCE: f32 = 100.0;
+
+/// Features for predicting the real time it will take to get from stop A to stop B.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Features {
+    // maybe include these
+    pub lat: f32,
+    pub lng: f32,
+    pub route_id: String,
+    pub stop_to_predict: String,
+
+    // the following are features we can compute that seem good to me at first glance
+
+    /// the day of the week
+    pub weekday: u32,
+    /// the hour of day
+    pub hour: u32,
+    /// the time it takes according to the schedule to get from stop A to B
+    pub scheduled_duration: u64,
+    /// the time it took the previous vehicle to get from stop A to B
+    pub prev_vehicle_duration: u64,
+    /// the amount of time already passed since the last stop
+    pub passed_duration: u64,
+    /// the delay the vehicle had at stop A
+    pub delay_at_last_stop: u64,
+    /// the delay the previous vehicle had at stop A
+    pub prev_vehicle_delay_at_last_stop: u64,
+}
+
+/// Features for predicting the speed relative to the schedule for the next stops.
+/// This is a sequence to sequence problem.
+/// Input features: ratio of (real time between past stops / scheduled time)
+/// example: [1.2, 1.0, 1.12, 0.78, 1.1]
+/// Output (labels): same ratio, but for future stops
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Features2 {
+    // maybe include these
+    pub lat: f32,
+    pub lng: f32,
+    pub route_id: String,
+    pub direction_id: u8,
+    /// the day of the week
+    pub weekday: u32,
+    /// the hour of day
+    pub hour: u32,
+    // TODO: sequence
+}
 
 pub struct FeatureExtractor {
     // metadata_table: HashMap<String, VehicleMetadata>,
@@ -48,7 +95,7 @@ impl FeatureExtractor {
         }
     }
 
-    pub fn extract_features(&mut self, vehicle: &mut Vehicle) {
+    pub fn extract_features(&mut self, vehicle: &mut Vehicle) -> Result<Features> {
         // update vehicle cache
         let vehicle_rc = if let Some(vehicle_rc) = self.vehicles.get_mut(&vehicle.id) {
             *vehicle_rc.borrow_mut() = vehicle.clone();
@@ -61,9 +108,9 @@ impl FeatureExtractor {
 
         // get metadata if there
         if let Some(ref mut vehicle_metadata) = vehicle_rc.borrow_mut().metadata {
-            // check if next stop is reached
-            if let Some(ref mut stops) = vehicle_metadata.stops {
-                for stop in stops {
+            if let Some(stops) = &mut vehicle_metadata.stops {
+                // check if next stop is reached
+                for stop in stops.iter_mut() {
                     if stop.real_time == None {
                         if measure_distance(stop.stop_lat, stop.stop_lon, vehicle.lat, vehicle.lng) < STOP_DETECT_DISTANCE {
                             // TODO: attach previous stops' real_time before
@@ -79,12 +126,79 @@ impl FeatureExtractor {
                         }
                     }
                 }
+
+                // now we begin constructing the actual features
+                let mut stop_to_predict = None;
+                let mut prev_stop = None;
+                let mut schedule_time_a: u64 = 0;
+                let mut schedule_time_b: u64 = 0;
+                let mut real_time_a: u64 = 0;
+                for stop in stops.iter_mut() {
+                    if let Some(real_time) = stop.real_time {
+                        prev_stop = Some(stop.stop_id.clone());
+                        stop_to_predict = None;
+                        schedule_time_a = stop.scheduled_time;
+                        real_time_a = real_time;
+                    } else if prev_stop != None && stop_to_predict == None {
+                        stop_to_predict = Some(stop.stop_id.clone());
+                        schedule_time_b = stop.scheduled_time;
+                    }
+                }
+                if stop_to_predict == None || prev_stop == None {
+                    bail!("missing previous stop or stop to predict");
+                }
+                let stop_to_predict = stop_to_predict.unwrap();
+                let prev_stop = prev_stop.unwrap();
+
+                // find the times for the previous vehicle
+                let mut prev_vehicle_schedule_time_a: u64 = 0;
+                let mut prev_vehicle_real_time_a: u64 = 0;
+                let mut prev_vehicle_real_time_b: u64 = 0;
+                if let Some(prev_vehicle) = self.prev_vehicle.get(&vehicle.id) {
+                    if let Some(ref prev_vehicle_meta) = prev_vehicle.borrow().metadata {
+                        if let Some(ref prev_vehicle_stops) = prev_vehicle_meta.stops {
+                            for stop in prev_vehicle_stops {
+                                if stop.stop_id == prev_stop {
+                                    if let Some(real_time) = stop.real_time {
+                                        prev_vehicle_schedule_time_a = stop.scheduled_time;
+                                        prev_vehicle_real_time_a = real_time;
+                                    }
+                                }
+                                if stop.stop_id == stop_to_predict {
+                                    if let Some(real_time) = stop.real_time {
+                                        prev_vehicle_real_time_b = real_time;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if prev_vehicle_real_time_a == 0 || prev_vehicle_real_time_b == 0 {
+                    bail!("missing previous vehicle data");
+                }
+
+                let datetime = NaiveDateTime::from_timestamp_millis(vehicle.timestamp as i64 * 1000).unwrap();
+                let features = Features {
+                    lat: vehicle.lat,
+                    lng: vehicle.lng,
+                    route_id: vehicle_metadata.route_id.clone().unwrap(),
+                    stop_to_predict,
+                    scheduled_duration: schedule_time_b - schedule_time_a,
+                    prev_vehicle_duration: prev_vehicle_real_time_b - prev_vehicle_real_time_a,
+                    passed_duration: vehicle.timestamp - real_time_a,
+                    delay_at_last_stop: real_time_a - schedule_time_a,
+                    prev_vehicle_delay_at_last_stop: prev_vehicle_real_time_a - prev_vehicle_schedule_time_a,
+                    weekday: datetime.date().weekday().num_days_from_monday(),
+                    hour: datetime.time().hour(),
+                };
+                return Ok(features);
             }
         }
 
         // in this function, we used the Rc<RefCell<Vehicle>>> we created in the beginning
         // now we need to update the vehicle in the stream from it
         *vehicle = vehicle_rc.borrow().clone();
+        bail!("could not create features");
     }
 }
 

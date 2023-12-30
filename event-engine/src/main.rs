@@ -26,7 +26,8 @@ pub struct VehicleMetadata {
     pub shape_id: Option<u64>,
     pub route_id: Option<String>, // TODO: make some of these not optional
     pub direction_id: Option<u8>,
-    pub stops: Option<Vec<Stop>>, // sorted by stop_sequence
+    pub stops: Vec<Stop>, // sorted by stop_sequence
+    pub real_stop_times: Option<Vec<Option<u64>>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -36,7 +37,6 @@ pub struct Stop {
     pub direction_id: u8,
     pub stop_name: String,
     pub scheduled_time: u64,
-    pub real_time: Option<u64>, // maybe seperate data structure
     pub stop_lat: f32,
     pub stop_lon: f32,
     pub route_id: String,
