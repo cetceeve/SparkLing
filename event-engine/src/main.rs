@@ -1,4 +1,3 @@
-use chrono::NaiveTime;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use redis::AsyncCommands;
@@ -36,8 +35,8 @@ pub struct Stop {
     pub stop_sequence: u16,
     pub stop_id: String,
     pub stop_name: String,
-    pub arrival_time: Option<String>,
-    pub departure_time: Option<String>,
+    pub arrival_time: String,
+    pub departure_time: String,
     pub stop_lat: f32,
     pub stop_lon: f32,
     pub shape_dist_traveled: f32,

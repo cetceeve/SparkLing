@@ -1,14 +1,13 @@
 use crate::Vehicle;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-mod feature_pipeline;
-mod feature_pipeline2;
-mod inference_pipeline;
 mod metadata_join;
 mod stop_detector;
+mod feature_pipeline;
+mod inference_pipeline;
 
-use metadata_join::MetadataJoiner;
-
+use self::feature_pipeline::TrainingFeatureExtractor;
+use self::metadata_join::MetadataJoiner;
 use self::stop_detector::StopDetector;
 
 pub trait ProcessingStep: Send {
@@ -44,6 +43,7 @@ impl StreamProcessor {
         let mut processor = Self::init(5);
         processor.register_step(Box::new(MetadataJoiner::init().await));
         processor.register_step(Box::new(StopDetector::init()));
+        processor.register_step(Box::new(TrainingFeatureExtractor::init()));
         processor
     }
 

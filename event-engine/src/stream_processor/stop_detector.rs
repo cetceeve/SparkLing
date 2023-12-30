@@ -23,29 +23,31 @@ impl ProcessingStep for StopDetector {
     fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> bool {
         // we can only do anything if metadata is there
         if let Some(vehicle_metadata) = &mut vehicle.metadata {
-            // get mutable reference to known real stop times for the vehicle
-            let (_, real_stop_times) = if let Some(times) = self.real_stop_times.get_mut(&vehicle.id) {
-                if times.0 != vehicle.trip_id.unwrap() {
-                    self.real_stop_times.insert(vehicle.id.clone(), (vehicle.trip_id.clone().unwrap(), vec![None; vehicle_metadata.stops.len()]));
-                    self.real_stop_times.get_mut(&vehicle.id).unwrap()
+            if let Some(stops) = &vehicle_metadata.stops {
+                // get mutable reference to known real stop times for the vehicle
+                let (_, real_stop_times) = if let Some(times) = self.real_stop_times.get_mut(&vehicle.id) {
+                    if times.0 != vehicle.trip_id.clone().unwrap() {
+                        self.real_stop_times.insert(vehicle.id.clone(), (vehicle.trip_id.clone().unwrap(), vec![None; stops.len()]));
+                        self.real_stop_times.get_mut(&vehicle.id).unwrap()
+                    } else {
+                        times
+                    }
                 } else {
-                    times
-                }
-            } else {
-                self.real_stop_times.insert(vehicle.id.clone(), (vehicle.trip_id.clone().unwrap(), vec![None; vehicle_metadata.stops.len()]));
-                self.real_stop_times.get_mut(&vehicle.id).unwrap()
-            };
+                    self.real_stop_times.insert(vehicle.id.clone(), (vehicle.trip_id.clone().unwrap(), vec![None; stops.len()]));
+                    self.real_stop_times.get_mut(&vehicle.id).unwrap()
+                };
 
-            // record time if a new stop is reached
-            for (i, stop) in vehicle_metadata.stops.iter().enumerate() {
-                if real_stop_times[i] == None {
-                    if measure_distance(stop.stop_lat, stop.stop_lon, vehicle.lat, vehicle.lng) < STOP_DETECT_DISTANCE {
-                        real_stop_times[i] = Some(vehicle.timestamp);
+                // record time if a new stop is reached
+                for (i, stop) in stops.iter().enumerate() {
+                    if real_stop_times[i] == None {
+                        if measure_distance(stop.stop_lat, stop.stop_lon, vehicle.lat, vehicle.lng) < STOP_DETECT_DISTANCE {
+                            real_stop_times[i] = Some(vehicle.timestamp);
+                        }
                     }
                 }
+                // attach real times to vehicle
+                vehicle_metadata.real_stop_times = Some(real_stop_times.clone());
             }
-            // attach real times to vehicle
-            vehicle_metadata.real_stop_times = Some(real_stop_times.clone());
         }
         true // we don't filter here
     }

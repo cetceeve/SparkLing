@@ -94,12 +94,12 @@ fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
         series.split("|").map(|x| x.parse::<u16>().unwrap()).collect()
     } else { Vec::default() };
     
-    let arrival_times: Vec<Option<String>> = if let Some(series) = raw_item.arrival_time {
-        series.split("|").map(|x| if x == "nan" { None } else { Some (x.to_owned()) }).collect()
+    let arrival_times: Vec<String> = if let Some(series) = raw_item.arrival_time {
+        series.split("|").map(|x| x.to_owned()).collect()
     } else { Vec::default() };
     
-    let departure_times: Vec<Option<String>> = if let Some(series) = raw_item.departure_time {
-        series.split("|").map(|x| if x == "nan" { None } else { Some (x.to_owned()) }).collect()
+    let departure_times: Vec<String> = if let Some(series) = raw_item.departure_time {
+        series.split("|").map(|x| x.to_owned()).collect()
     } else { Vec::default() };
     
     let shape_dist_traveleds: Vec<f32> = if let Some(series) = raw_item.shape_dist_traveled {
