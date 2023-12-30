@@ -94,10 +94,17 @@ def aggregate_gtfs_static_sweden(cloud_event):
         .merge(stop_seq_df, on=["route_id", "direction_id"], how="left") \
         .merge(stop_times_df[["trip_id", "stop_id", "arrival_time", "departure_time"]], on=["trip_id", "stop_id"], how="left")
     
+    # Sort the sequence ids
+    aggregated_df.sort_values(["trip_id", "stop_sequence"],  inplace=True)
+
     # print("trips: ", trips_df.shape)
     # print("aggregated: ", aggregated_df.shape)
     # print(f"With Arrival Time: {aggregated_df[['arrival_time']].count().iloc[0]}/{aggregated_df.shape[0]}")
     
+    # function to represent list of values
+    def serialize_series(series):
+        return "|".join(str(x) for x in list(series))
+
     # Store all stops as lists in the csv to reduce file size and easy merging
     final_df = aggregated_df.groupby(by=["trip_id"], as_index=False).agg({
         "shape_id": "first",
@@ -109,17 +116,18 @@ def aggregate_gtfs_static_sweden(cloud_event):
         "trip_headsign": "first",
         "agency_id": "first",
         "agency_name": "first",
-        "stop_id": list,
-        "stop_name": list,
-        "stop_lat": list,
-        "stop_lon": list,
-        "stop_sequence": list,
-        "arrival_time": list,
-        "departure_time": list,
-        "shape_dist_traveled": list,
+        "stop_id": serialize_series,
+        "stop_name": serialize_series,
+        "stop_lat": serialize_series,
+        "stop_lon": serialize_series,
+        "stop_sequence": serialize_series,
+        "arrival_time": serialize_series,
+        "departure_time": serialize_series,
+        "shape_dist_traveled": serialize_series,
     })
 
-    print("Final: ", final_df.shape)    
+    print("Final: ", final_df.shape)
+    # print(final_df)    
     # print(final_df.columns)
     
     # Compress output to safe over 90% storage space 

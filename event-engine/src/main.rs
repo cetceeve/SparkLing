@@ -1,3 +1,4 @@
+use chrono::NaiveTime;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use redis::AsyncCommands;
@@ -33,13 +34,12 @@ pub struct VehicleMetadata {
 pub struct Stop {
     pub stop_sequence: u16,
     pub stop_id: String,
-    pub direction_id: u8,
     pub stop_name: String,
-    pub scheduled_time: u64,
+    pub arrival_time: Option<String>,
+    pub departure_time: Option<String>,
     pub real_time: Option<u64>, // maybe seperate data structure
     pub stop_lat: f32,
     pub stop_lon: f32,
-    pub route_id: String,
     pub shape_dist_traveled: f32,
 }
 
