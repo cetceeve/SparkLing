@@ -26,7 +26,7 @@ pub struct VehicleMetadata {
     pub shape_id: Option<u64>,
     pub route_id: Option<String>, // TODO: make some of these not optional
     pub direction_id: Option<u8>,
-    pub stops: Vec<Stop>, // sorted by stop_sequence
+    pub stops: Option<Vec<Stop>>, // sorted by stop_sequence
     pub real_stop_times: Option<Vec<Option<u64>>>,
 }
 
@@ -34,12 +34,11 @@ pub struct VehicleMetadata {
 pub struct Stop {
     pub stop_sequence: u16,
     pub stop_id: String,
-    pub direction_id: u8,
     pub stop_name: String,
-    pub scheduled_time: u64,
+    pub arrival_time: Option<String>,
+    pub departure_time: Option<String>,
     pub stop_lat: f32,
     pub stop_lon: f32,
-    pub route_id: String,
     pub shape_dist_traveled: f32,
 }
 
