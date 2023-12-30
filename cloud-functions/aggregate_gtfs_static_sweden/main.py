@@ -81,18 +81,18 @@ def aggregate_gtfs_static_sweden(cloud_event):
     # we don't merge directly on trips because trips could skip stops
     # using this all routes will have the same stops
     # when we merge the departure and arrival times on trop_id some stops will have NaN
-    stop_seq_df = trips_df \
-        .merge(stop_times_df, on="trip_id") \
-        .drop_duplicates(subset=["route_id", "direction_id", "stop_sequence"]) \
-        .merge(stops_df, on="stop_id")
-    stop_seq_df = stop_seq_df[["route_id", "direction_id", "trip_headsign", "stop_id", "stop_name", "stop_lat", "stop_lon", "stop_sequence", "shape_dist_traveled"]]
-    # print(stop_seq_df.shape)    
+    # stop_seq_df = trips_df \
+    #     .merge(stop_times_df, on="trip_id") \
+    #     .drop_duplicates(subset=["route_id", "direction_id", "stop_sequence"]) \
+    #     .merge(stops_df, on="stop_id")
+    # stop_seq_df = stop_seq_df[["route_id", "direction_id", "trip_headsign", "stop_id", "stop_name", "stop_lat", "stop_lon", "stop_sequence", "shape_dist_traveled"]]
 
     aggregated_df = trips_df \
         .merge(routes_df, on="route_id", how="left") \
         .merge(agency_df, on="agency_id", how="left") \
-        .merge(stop_seq_df, on=["route_id", "direction_id"], how="left") \
-        .merge(stop_times_df[["trip_id", "stop_id", "arrival_time", "departure_time"]], on=["trip_id", "stop_id"], how="left")
+        .merge(stop_times_df, on="trip_id", how="left") \
+        .merge(stops_df, on="stop_id", how="left")
+        # .merge(stop_seq_df, on=["route_id", "direction_id"], how="left") \
     
     # Sort the sequence ids
     aggregated_df.sort_values(["trip_id", "stop_sequence"],  inplace=True)
