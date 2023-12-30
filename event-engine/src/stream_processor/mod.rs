@@ -1,6 +1,5 @@
-use std::time::Duration;
 use crate::Vehicle;
-use tokio::{sync::mpsc::{UnboundedReceiver, UnboundedSender}, time::Instant};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 mod feature_pipeline;
 mod inference_pipeline;
@@ -46,8 +45,8 @@ impl StreamProcessor {
 
     pub async fn run(
         &mut self,
-        mut receiver: UnboundedReceiver<Vehicle>,
-        sender: UnboundedSender<Vehicle>,
+        mut receiver: Receiver<Vehicle>,
+        sender: Sender<Vehicle>,
     ) {
         'EVENT_LOOP: loop {
             let mut vehicle = receiver.recv().await.expect("broken internal channel");
@@ -67,7 +66,7 @@ impl StreamProcessor {
                 }
             }
 
-            sender.send(vehicle).expect("broken internal channel");
+            sender.send(vehicle).await.expect("broken internal channel");
         }
     }
 }

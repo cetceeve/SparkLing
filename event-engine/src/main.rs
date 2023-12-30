@@ -1,10 +1,10 @@
-use chrono::NaiveTime;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use redis::AsyncCommands;
 
 mod rt_gtfs_client;
 mod stream_processor;
+mod training_data_client;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Vehicle {
@@ -45,13 +45,21 @@ pub struct Stop {
 
 #[tokio::main]
 async fn main() {
-    let (input_sender, input_receiver) = mpsc::unbounded_channel::<Vehicle>();
-    let (output_sender, mut output_receiver) = mpsc::unbounded_channel::<Vehicle>();
+    let (input_sender, input_receiver) = mpsc::channel::<Vehicle>(5000);
+    let (output_sender, mut output_receiver) = mpsc::channel::<Vehicle>(5000);
     let mut processor = stream_processor::StreamProcessor::default().await;
+
+    // Uncomment here to run training
+    // let mut training_client = training_data_client::TrainingDataClient::default().await;
     tokio::task::spawn(async move {
         processor.run(input_receiver, output_sender).await
     });
     rt_gtfs_client::start_vehicle_position_clients(input_sender);
+
+    // Uncomment here to run training
+    // tokio::task::spawn(async move {
+    //     training_client.run(input_sender).await;
+    // });
 
     // start redis client
     let redis_client = redis::Client::open("redis://sparkling-redis/").unwrap();
