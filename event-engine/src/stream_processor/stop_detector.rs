@@ -37,14 +37,22 @@ impl ProcessingStep for StopDetector {
                     self.real_stop_times.get_mut(&vehicle.id).unwrap()
                 };
 
-                // record time if a new stop is reached
+                // find closest stop
+                let mut closest_stop_idx = 0;
+                let mut closest_stop_distance = 1000.0;
                 for (i, stop) in stops.iter().enumerate() {
-                    if real_stop_times[i] == None {
-                        if measure_distance(stop.stop_lat, stop.stop_lon, vehicle.lat, vehicle.lng) < STOP_DETECT_DISTANCE {
-                            real_stop_times[i] = Some(vehicle.timestamp);
-                        }
+                    let dist = measure_distance(stop.stop_lat, stop.stop_lon, vehicle.lat, vehicle.lng);
+                    if dist < closest_stop_distance {
+                        closest_stop_distance = dist;
+                        closest_stop_idx = i;
                     }
                 }
+
+                // record time if closest stop is newly reached
+                if closest_stop_distance < STOP_DETECT_DISTANCE && real_stop_times[closest_stop_idx] == None {
+                    real_stop_times[closest_stop_idx] = Some(vehicle.timestamp);
+                }
+
                 // attach real times to vehicle
                 vehicle_metadata.real_stop_times = Some(real_stop_times.clone());
             }

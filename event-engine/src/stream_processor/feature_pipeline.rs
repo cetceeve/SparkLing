@@ -1,10 +1,10 @@
+use std::fs::{OpenOptions, File};
+
 use crate::Vehicle;
 use chrono::{NaiveDateTime, Timelike, Datelike, NaiveTime, Duration};
 use serde::{Deserialize, Serialize};
 
 use super::ProcessingStep;
-
-static STOP_DETECT_DISTANCE: f32 = 100.0;
 
 /// Features for predicting the speed relative to the schedule for the next stops.
 /// This is a sequence to sequence problem.
@@ -14,8 +14,9 @@ static STOP_DETECT_DISTANCE: f32 = 100.0;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TrainingFeatures {
     // maybe include these
-    // pub lat: f32,
-    // pub lng: f32,
+    // pub lat: f64,
+    // pub lng: f64,
+    pub trip_id: String,
     pub route_id: String,
     pub direction_id: u8,
     pub route_type: u64,
@@ -23,17 +24,30 @@ pub struct TrainingFeatures {
     pub weekday: u32,
     /// the hour of day
     pub hour: u32,
-    /// the sequence
-    pub past_time_ratios: Vec<f32>,
-    /// labels
-    pub future_time_ratios: Vec<f32>,
+    /// the stop_sequence of the startingn stop of the section
+    pub stop_sequence: u32,
+    /// the scheduled section length in seconds
+    pub scheduled_duration: u32,
+    /// the same, but for the next timestep
+    pub next_scheduled_duration: u32,
+    /// the ratio of true duration to scheduled duration
+    pub ratio: f64,
 }
 
-pub struct TrainingFeatureExtractor {}
+pub struct TrainingFeatureExtractor {
+    writer: csv::Writer<File>,
+}
 
 impl TrainingFeatureExtractor {
     pub fn init() -> Self {
-        Self {}
+        let file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open("/training-data/training_data.csv")
+            .unwrap();
+        let writer = csv::Writer::from_writer(file);
+        Self { writer }
     }
 }
 
@@ -59,46 +73,56 @@ impl ProcessingStep for TrainingFeatureExtractor {
 
                 // calculate ratios
                 let mut ratios = vec![];
+                let mut scheduled_durations = vec![];
                 let real_stop_times = real_stop_times.iter().map(|x| x.unwrap_or(0)).collect::<Vec<u64>>();
                 let mut i = 1;
                 while i < stops.len() {
                     if real_stop_times[i-1] == 0 {
                         ratios.push(1.0);
+                        scheduled_durations.push(scheduled_timestamps[i] - scheduled_timestamps[i-1]);
+                        i += 1;
                     } else {
                         let mut j = 0;
                         while real_stop_times[i+j] == 0 {
                             j += 1;
                         }
-                        let ratio = (real_stop_times[i+j] as f32 - real_stop_times[i-1] as f32) / (scheduled_timestamps[i+j] as f32 - scheduled_timestamps[i-1] as f32);
-                        assert!(ratio.abs() > 50.0, "feature pipeline: bad ratio, likely got a date wrong"); // sanity check
-                        for _ in 0..j {
+                        let mut ratio = (real_stop_times[i+j] as f64 - real_stop_times[i-1] as f64) / (scheduled_timestamps[i+j] as f64 - scheduled_timestamps[i-1] as f64);
+                        if ratio == 0.0 {
+                            ratio = 1.0;
+                        }
+                        if ratio > 50.0 || ratio < 0.0 {
+                            println!("DEBUG: bad ratio: {:?} -> {:?}, {:?} - {:?}, {:?}", ratio, real_stop_times[i+j], real_stop_times[i-1], scheduled_timestamps[i+j], scheduled_timestamps[i-1])
+                        }
+                        let p = i;
+                        for q in 0..=j {
                             ratios.push(ratio);
+                            scheduled_durations.push(scheduled_timestamps[p+q] - scheduled_timestamps[p+q-1]);
+                            i += 1;
                         }
                     }
-                    i += 1;
                 }
+                scheduled_durations.push(0);
                 
                 // create multiple training samples from one trip
-                let mut writer = csv::Writer::from_writer(Vec::<u8>::new());
                 for i in 0..(stops.len()-1) {
                     let datetime = scheduled_times[i+1].clone();
                     let features = TrainingFeatures {
                         // lat: vehicle.lat,
                         // lng: vehicle.lng,
+                        trip_id: vehicle.trip_id.clone().unwrap(),
                         route_id: vehicle_metadata.route_id.clone().unwrap(),
                         direction_id: vehicle_metadata.direction_id.unwrap(),
                         route_type: vehicle_metadata.route_type.unwrap(),
                         weekday: datetime.date().weekday().num_days_from_monday(),
                         hour: datetime.time().hour(),
-                        past_time_ratios: ratios[..i].to_vec(),
-                        future_time_ratios: ratios[i..].to_vec(),
+                        stop_sequence: i as u32 + 1,
+                        ratio: ratios[i],
+                        scheduled_duration: scheduled_durations[i] as u32,
+                        next_scheduled_duration: scheduled_durations[i+1] as u32,
                     };
-                    writer.serialize(features).unwrap();
+                    self.writer.serialize(features).unwrap();
                 }
-                writer.flush().unwrap();
-                let csv_data = writer.into_inner().unwrap();
-                let csv_string = String::from_utf8(csv_data).unwrap();
-                println!("DEBUG: features from one trip:\n{:?}\n", csv_string);
+                self.writer.flush().unwrap();
             }
         }
         true
