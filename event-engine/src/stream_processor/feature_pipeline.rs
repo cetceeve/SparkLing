@@ -1,5 +1,6 @@
+use std::collections::HashSet;
 use std::fs::{OpenOptions, File};
-use std::io::Write;
+use std::io::{Write, BufWriter};
 
 use crate::Vehicle;
 use chrono::{NaiveDateTime, Timelike, Datelike, NaiveTime, Duration};
@@ -47,7 +48,8 @@ pub fn tokenize_time(ts: NaiveDateTime) -> (Token, Token) {
 }
 
 pub struct TrainingFeatureExtractor {
-    writer: File,
+    writer: BufWriter<File>,
+    duplicate_filter: HashSet<String>,
 }
 
 impl TrainingFeatureExtractor {
@@ -58,7 +60,10 @@ impl TrainingFeatureExtractor {
             .create(true)
             .open("/training-data/training_data.csv")
             .unwrap();
-        Self { writer: file }
+        Self {
+            writer: BufWriter::new(file),
+            duplicate_filter: Default::default(),
+        }
     }
 }
 
@@ -71,20 +76,30 @@ impl ProcessingStep for TrainingFeatureExtractor {
                 return false
             }
             if let (Some(real_stop_times), Some(stops)) = (&vehicle_metadata.real_stop_times, &vehicle_metadata.stops) {
-                if real_stop_times.len() == 0 || *real_stop_times.last().unwrap() == None {
+                if real_stop_times.len() < 3 || *real_stop_times.last().unwrap() == None || real_stop_times.iter().filter(|x| **x == None).count() > stops.len() / 2 {
                     return false // we only generate training features once we reached the last stop
                 }
+                if self.duplicate_filter.contains(vehicle.trip_id.as_ref().unwrap()) {
+                    return false // only emit features once per trip
+                }
+                self.duplicate_filter.insert(vehicle.trip_id.clone().unwrap());
 
                 // convert scheduled stop times to useful timestamps
                 let end_date = NaiveDateTime::from_timestamp_millis(vehicle.timestamp as i64 * 1000).unwrap().date();
-                let mut scheduled_times = stops.iter().map(|x| end_date.and_time(NaiveTime::parse_from_str(&x.arrival_time, "%H:%M:%S").expect(format!("Failed to parse: {:x?}", x).as_str()))).collect::<Vec<NaiveDateTime>>();
+                if stops.iter().any(|x| x.arrival_time.starts_with("24") || x.arrival_time.starts_with("25")) {
+                    return false // we don't deal with funny timestamps
+                }
+                let mut scheduled_times = stops.iter().map(|x| {
+                    end_date.and_time(NaiveTime::parse_from_str(&x.arrival_time, "%H:%M:%S").expect(format!("Failed to parse: {:x?}", x).as_str()))
+                }).collect::<Vec<NaiveDateTime>>();
                 // if the trip ended past midnight, we need to fix the scheduled dates for stops before midnight
                 for i in (1..scheduled_times.len()).rev() {
                     if scheduled_times[i] < scheduled_times[i-1] {
                         scheduled_times[i-1] -= Duration::days(1);
                     }
                 }
-                let scheduled_timestamps = scheduled_times.iter().map(|x| x.timestamp()).collect::<Vec<i64>>();
+                // we need to subtract 1h for some reason, maybe trafiklab uses timezones inconsistently
+                let scheduled_timestamps = scheduled_times.iter().map(|x| x.timestamp() - 3600).collect::<Vec<i64>>();
 
                 // construct sequence
                 let route_token = tokenize_route(vehicle_metadata.route_id.as_ref().unwrap(), vehicle_metadata.direction_id.unwrap());

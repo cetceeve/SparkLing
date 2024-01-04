@@ -4,7 +4,7 @@ use std::f32::consts::PI;
 use crate::Vehicle;
 use super::ProcessingStep;
 
-static STOP_DETECT_DISTANCE: f32 = 100.0;
+static STOP_DETECT_DISTANCE: f32 = 250.0;
 
 pub struct StopDetector {
     /// mapping of: vehicle.id -> (trip_id, real_stop_times)

@@ -18,7 +18,7 @@ services:
     image: fabianzeiher/sparkling-event-engine
     build: 
       context: ./event-engine 
-      dockerfile: ./debug.Dockerfile
+      dockerfile: ./Dockerfile
     volumes:
       - ./training-data:/training-data:Z
     depends_on:
