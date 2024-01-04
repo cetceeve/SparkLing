@@ -77,7 +77,7 @@ impl ProcessingStep for TrainingFeatureExtractor {
 
                 // convert scheduled stop times to useful timestamps
                 let end_date = NaiveDateTime::from_timestamp_millis(vehicle.timestamp as i64 * 1000).unwrap().date();
-                let mut scheduled_times = stops.iter().map(|x| end_date.and_time(NaiveTime::parse_from_str(&x.arrival_time, "%H:%M:%S").unwrap())).collect::<Vec<NaiveDateTime>>();
+                let mut scheduled_times = stops.iter().map(|x| end_date.and_time(NaiveTime::parse_from_str(&x.arrival_time, "%H:%M:%S").expect(format!("Failed to parse: {:x?}", x).as_str()))).collect::<Vec<NaiveDateTime>>();
                 // if the trip ended past midnight, we need to fix the scheduled dates for stops before midnight
                 for i in (1..scheduled_times.len()).rev() {
                     if scheduled_times[i] < scheduled_times[i-1] {
