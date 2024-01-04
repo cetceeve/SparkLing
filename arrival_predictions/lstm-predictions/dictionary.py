@@ -83,7 +83,7 @@ def create_vocabulary():
 
 def main():
     vocabs = create_vocabulary()
-    with open(f"data/vocab.json", "w") as df:
+    with open(f"data/training_data_vocab.json", "w") as df:
         json.dump(vocabs, df, ensure_ascii=False)
         print("Saved Vocabulary.")
 
