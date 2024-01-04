@@ -23,6 +23,10 @@ impl ProcessingStep for StopDetector {
     fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> bool {
         // we can only do anything if metadata is there
         if let Some(vehicle_metadata) = &mut vehicle.metadata {
+            // we only deal with metros for now
+            if vehicle_metadata.route_type != Some(401) {
+                return true
+            }
             if let Some(stops) = &vehicle_metadata.stops {
                 // get mutable reference to known real stop times for the vehicle
                 let (_, real_stop_times) = if let Some(times) = self.real_stop_times.get_mut(&vehicle.id) {

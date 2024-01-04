@@ -68,11 +68,11 @@ impl ProcessingStep for TrainingFeatureExtractor {
         if let Some(ref vehicle_metadata) = vehicle.metadata {
             // we only deal with metros
             if vehicle_metadata.route_type != Some(401) {
-                return true
+                return false
             }
             if let (Some(real_stop_times), Some(stops)) = (&vehicle_metadata.real_stop_times, &vehicle_metadata.stops) {
                 if real_stop_times.len() == 0 || *real_stop_times.last().unwrap() == None {
-                    return true // we only generate training features once we reached the last stop
+                    return false // we only generate training features once we reached the last stop
                 }
 
                 // convert scheduled stop times to useful timestamps
@@ -112,6 +112,6 @@ impl ProcessingStep for TrainingFeatureExtractor {
                 self.writer.flush().unwrap();
             }
         }
-        true
+        false
     }
 }
