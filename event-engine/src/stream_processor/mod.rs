@@ -1,12 +1,14 @@
-use std::time::Duration;
 use crate::Vehicle;
-use tokio::{sync::mpsc::{UnboundedReceiver, UnboundedSender}, time::Instant};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
+mod metadata_join;
+mod stop_detector;
 mod feature_pipeline;
 mod inference_pipeline;
-mod metadata_join;
 
-use metadata_join::MetadataJoiner;
+use self::feature_pipeline::TrainingFeatureExtractor;
+use self::metadata_join::MetadataJoiner;
+use self::stop_detector::StopDetector;
 
 pub trait ProcessingStep: Send {
     /// May mutate the vehicle, or remove it from the stream, by returning `false`.
@@ -39,8 +41,9 @@ impl StreamProcessor {
 
     pub async fn default() -> Self {
         let mut processor = Self::init(5);
-        let metadata_joiner = MetadataJoiner::init().await;
-        processor.register_step(Box::new(metadata_joiner));
+        processor.register_step(Box::new(MetadataJoiner::init().await));
+        processor.register_step(Box::new(StopDetector::init()));
+        processor.register_step(Box::new(TrainingFeatureExtractor::init()));
         processor
     }
 

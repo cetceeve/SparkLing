@@ -94,12 +94,12 @@ fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
         series.split("|").map(|x| x.parse::<u16>().unwrap()).collect()
     } else { Vec::default() };
     
-    let arrival_times: Vec<Option<String>> = if let Some(series) = raw_item.arrival_time {
-        series.split("|").map(|x| if x == "nan" { None } else { Some (x.to_owned()) }).collect()
+    let arrival_times: Vec<String> = if let Some(series) = raw_item.arrival_time {
+        series.split("|").map(|x| x.to_owned()).collect()
     } else { Vec::default() };
     
-    let departure_times: Vec<Option<String>> = if let Some(series) = raw_item.departure_time {
-        series.split("|").map(|x| if x == "nan" { None } else { Some (x.to_owned()) }).collect()
+    let departure_times: Vec<String> = if let Some(series) = raw_item.departure_time {
+        series.split("|").map(|x| x.to_owned()).collect()
     } else { Vec::default() };
     
     let shape_dist_traveleds: Vec<f32> = if let Some(series) = raw_item.shape_dist_traveled {
@@ -117,7 +117,6 @@ fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
         stop_sequence: stop_sequences[i],
         arrival_time: arrival_times[i].to_owned(),
         departure_time: departure_times[i].to_owned(),
-        real_time: None,
         shape_dist_traveled: shape_dist_traveleds[i],
        });
        i = i + 1;
@@ -133,7 +132,8 @@ fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
         route_type: raw_item.route_type,
         agency_name: raw_item.agency_name,
         trip_headsign: raw_item.trip_headsign,
-        stops: if stop_ids.len() > 0 { Some(stops) } else { None } 
+        stops: if stop_ids.len() > 0 { Some(stops) } else { None },
+        real_stop_times: None,
     }
 }
 
