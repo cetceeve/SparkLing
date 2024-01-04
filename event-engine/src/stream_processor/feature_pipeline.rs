@@ -1,102 +1,117 @@
-use crate::{Vehicle, VehicleMetadata};
-use anyhow::Result;
-use csv;
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::f32::consts::PI;
+use std::fs::{OpenOptions, File};
+use std::io::Write;
 
-static STOP_DETECT_DISTANCE: f32 = 100.0;
+use crate::Vehicle;
+use chrono::{NaiveDateTime, Timelike, Datelike, NaiveTime, Duration};
 
-pub struct FeatureExtractor {
-    // metadata_table: HashMap<String, VehicleMetadata>,
+use super::ProcessingStep;
 
-    /// Mapping of vehicle_id -> vehicle
-    vehicles: HashMap<String, Rc<RefCell<Vehicle>>>,
-    /// Mapping of (stop_id, route_id, direction_id) -> (vehicle, timestamp)
-    last_vehicle_at_stop: HashMap<(String, String, u8), (Rc<RefCell<Vehicle>>, u64)>, // update only on arrival
-    next_vehicle: HashMap<String, Rc<RefCell<Vehicle>>>,
-    prev_vehicle: HashMap<String, Rc<RefCell<Vehicle>>>,
+/// A token in our Vocabulary.
+/// 0-30: time_delta -15m to +15m
+/// 31: sos
+/// 32: eos
+/// 33: pad
+/// 34-47: route_token: route_id + direction_id
+/// 48-149: stop_name ['Kungsträdgården', 'T-Centralen', 'Rådhuset', 'Fridhemsplan', 'Stadshagen', 'Västra skogen', 'Huvudsta', 'Solna strand', 'Sundbybergs centrum', 'Duvbo', 'Rissne', 'Rinkeby', 'Tensta', 'Hjulsta', 'Solna centrum', 'Näckrosen', 'Hallonbergen', 'Kymlinge norrut', 'Kista', 'Husby', 'Akalla', 'Kymlinge söderut', 'Norsborg', 'Hallunda', 'Alby', 'Fittja', 'Masmo', 'Vårby gård', 'Vårberg', 'Skärholmen', 'Sätra', 'Bredäng', 'Mälarhöjden', 'Axelsberg', 'Örnsberg', 'Aspudden', 'Liljeholmen', 'Hornstull', 'Zinkensdamm', 'Mariatorget', 'Slussen', 'Gamla stan', 'Östermalmstorg', 'Karlaplan', 'Gärdet', 'Ropsten', 'Mörby centrum', 'Danderyds sjukhus', 'Bergshamra', 'Universitetet', 'Tekniska högskolan', 'Stadion', 'Fruängen', 'Västertorp', 'Hägerstensåsen', 'Telefonplan', 'Midsommarkransen', 'Skarpnäck', 'Bagarmossen', 'Kärrtorp', 'Björkhagen', 'Hammarbyhöjden', 'Skärmarbrink', 'Gullmarsplan', 'Skanstull', 'Medborgarplatsen', 'Hötorget', 'Rådmansgatan', 'Odenplan', 'S:t Eriksplan', 'Thorildsplan', 'Kristineberg', 'Alvik', 'Stora mossen', 'Abrahamsberg', 'Brommaplan', 'Åkeshov', 'Ängbyplan', 'Islandstorget', 'Blackeberg', 'Råcksta', 'Vällingby', 'Johannelund', 'Hässelby gård', 'Hässelby strand', 'Farsta strand', 'Farsta', 'Hökarängen', 'Gubbängen', 'Tallkrogen', 'Skogskyrkogården', 'Sandsborg', 'Blåsut', 'Hagsätra', 'Rågsved', 'Högdalen', 'Bandhagen', 'Stureby', 'Svedmyra', 'Sockenplan', 'Enskede gård', 'Globen']
+/// 150-156: weekday
+/// 157-180: hour_of_day
+pub struct Token(u64);
+
+/// A complete sequence, used for training of our model
+/// pattern:  sos route_token weekday hour_of_day stop_name time_delta ... stop_name time_delta eos pad pad pad ...
+///
+/// The max trip length in the schedule is 35 stops,
+/// so the max sequence length will be 4 + 35*2 + 1 = 75
+pub struct TrainingSequence(Vec<Token>);
+
+/// Takes input in seconds
+pub fn tokenize_time_delta(delta: i64) -> Token {
+    Token(((delta / 60).max(-15).min(15) + 15) as u64)
 }
 
-// data structures:
-// route_id,direction_id -> [vehicles]
-// vehicle.id,route_id,direction_id -> (last_stop, time)
+pub fn tokenize_route(id: &str, direction_id: u8) -> Token {
+    let routes = vec!["9011001001000000".to_string(), "9011001001100000".to_string(), "9011001001300000".to_string(), "9011001001400000".to_string(), "9011001001700000".to_string(), "9011001001800000".to_string(), "9011001001900000".to_string()];
+    Token(34 + 7 * direction_id as u64 + routes.iter().position(|s| *s == *id).unwrap() as u64)
+}
 
-// computations:
-// vehicle.trip_id -> metadata.trip_id
-// vehicle.latlng -> current_stop   // update last_stop, next_stop
+pub fn tokenize_stop_name(name: &str) -> Token {
+    let stops = vec!["Kungsträdgården".to_string(), "T-Centralen".to_string(), "Rådhuset".to_string(), "Fridhemsplan".to_string(), "Stadshagen".to_string(), "Västra skogen".to_string(), "Huvudsta".to_string(), "Solna strand".to_string(), "Sundbybergs centrum".to_string(), "Duvbo".to_string(), "Rissne".to_string(), "Rinkeby".to_string(), "Tensta".to_string(), "Hjulsta".to_string(), "Solna centrum".to_string(), "Näckrosen".to_string(), "Hallonbergen".to_string(), "Kymlinge norrut".to_string(), "Kista".to_string(), "Husby".to_string(), "Akalla".to_string(), "Kymlinge söderut".to_string(), "Norsborg".to_string(), "Hallunda".to_string(), "Alby".to_string(), "Fittja".to_string(), "Masmo".to_string(), "Vårby gård".to_string(), "Vårberg".to_string(), "Skärholmen".to_string(), "Sätra".to_string(), "Bredäng".to_string(), "Mälarhöjden".to_string(), "Axelsberg".to_string(), "Örnsberg".to_string(), "Aspudden".to_string(), "Liljeholmen".to_string(), "Hornstull".to_string(), "Zinkensdamm".to_string(), "Mariatorget".to_string(), "Slussen".to_string(), "Gamla stan".to_string(), "Östermalmstorg".to_string(), "Karlaplan".to_string(), "Gärdet".to_string(), "Ropsten".to_string(), "Mörby centrum".to_string(), "Danderyds sjukhus".to_string(), "Bergshamra".to_string(), "Universitetet".to_string(), "Tekniska högskolan".to_string(), "Stadion".to_string(), "Fruängen".to_string(), "Västertorp".to_string(), "Hägerstensåsen".to_string(), "Telefonplan".to_string(), "Midsommarkransen".to_string(), "Skarpnäck".to_string(), "Bagarmossen".to_string(), "Kärrtorp".to_string(), "Björkhagen".to_string(), "Hammarbyhöjden".to_string(), "Skärmarbrink".to_string(), "Gullmarsplan".to_string(), "Skanstull".to_string(), "Medborgarplatsen".to_string(), "Hötorget".to_string(), "Rådmansgatan".to_string(), "Odenplan".to_string(), "S:t Eriksplan".to_string(), "Thorildsplan".to_string(), "Kristineberg".to_string(), "Alvik".to_string(), "Stora mossen".to_string(), "Abrahamsberg".to_string(), "Brommaplan".to_string(), "Åkeshov".to_string(), "Ängbyplan".to_string(), "Islandstorget".to_string(), "Blackeberg".to_string(), "Råcksta".to_string(), "Vällingby".to_string(), "Johannelund".to_string(), "Hässelby gård".to_string(), "Hässelby strand".to_string(), "Farsta strand".to_string(), "Farsta".to_string(), "Hökarängen".to_string(), "Gubbängen".to_string(), "Tallkrogen".to_string(), "Skogskyrkogården".to_string(), "Sandsborg".to_string(), "Blåsut".to_string(), "Hagsätra".to_string(), "Rågsved".to_string(), "Högdalen".to_string(), "Bandhagen".to_string(), "Stureby".to_string(), "Svedmyra".to_string(), "Sockenplan".to_string(), "Enskede gård".to_string(), "Globen".to_string()];
+    Token(48 + stops.iter().position(|s| *s == *name).unwrap() as u64)
+}
 
-// feature: 
-// prev vehicle real arrival time at the stop we want to predict minus
-// the arrival time of the previous vehicle at the stop before
+pub fn tokenize_time(ts: NaiveDateTime) -> (Token, Token) {
+    (
+        Token(150 + ts.weekday().num_days_from_monday() as u64),
+        Token(157 + ts.hour() as u64)
+    )
+}
 
+pub struct TrainingFeatureExtractor {
+    writer: File,
+}
 
-// we want a column in the metadata table that contains a list of the stop times for that trip
-// we also want to keep in memory, updated stop times for past stops,
-// we can use these, or something from it, like the current real delay as a feature
-// also, it's just cool to have by itself in the app as information to display
-
-impl FeatureExtractor {
-    pub async fn init() -> Self {
-        Self {
-            // metadata_table: download_metadata_table().await.unwrap(),
-            vehicles: Default::default(),
-            last_vehicle_at_stop: Default::default(),
-            next_vehicle: Default::default(),
-            prev_vehicle: Default::default(),
-        }
+impl TrainingFeatureExtractor {
+    pub fn init() -> Self {
+        let file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open("/training-data/training_data.csv")
+            .unwrap();
+        Self { writer: file }
     }
+}
 
-    pub fn extract_features(&mut self, vehicle: &mut Vehicle) {
-        // update vehicle cache
-        let vehicle_rc = if let Some(vehicle_rc) = self.vehicles.get_mut(&vehicle.id) {
-            *vehicle_rc.borrow_mut() = vehicle.clone();
-            Rc::clone(vehicle_rc)
-        } else {
-            let vehicle_rc = Rc::new(RefCell::new(vehicle.clone()));
-            self.vehicles.insert(vehicle.id.clone(), Rc::clone(&vehicle_rc));
-            vehicle_rc
-        };
-
+impl ProcessingStep for TrainingFeatureExtractor {
+    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> bool {
         // get metadata if there
-        if let Some(ref mut vehicle_metadata) = vehicle_rc.borrow_mut().metadata {
-            // check if next stop is reached
-            if let Some(ref mut stops) = vehicle_metadata.stops {
-                for stop in stops {
-                    if stop.real_time == None {
-                        if measure_distance(stop.stop_lat, stop.stop_lon, vehicle.lat, vehicle.lng) < STOP_DETECT_DISTANCE {
-                            // TODO: attach previous stops' real_time before
-                            stop.real_time = Some(vehicle.timestamp);
-                            if let Some((prev, _ts)) = self.last_vehicle_at_stop.get(&(stop.stop_id.clone(), vehicle_metadata.route_id.clone().unwrap(), vehicle_metadata.direction_id.clone().unwrap())) {
-                                self.prev_vehicle.insert(vehicle.id.clone(), Rc::clone(prev));
-                                self.next_vehicle.insert(prev.borrow().id.clone(), Rc::clone(&vehicle_rc));
-                            }
-                            self.last_vehicle_at_stop.insert(
-                                (stop.stop_id.clone(), vehicle_metadata.route_id.clone().unwrap(), vehicle_metadata.direction_id.clone().unwrap()),
-                                (Rc::clone(&vehicle_rc), vehicle.timestamp)
-                            );
-                        }
+        if let Some(ref vehicle_metadata) = vehicle.metadata {
+            // we only deal with metros
+            if vehicle_metadata.route_type != Some(401) {
+                return false
+            }
+            if let (Some(real_stop_times), Some(stops)) = (&vehicle_metadata.real_stop_times, &vehicle_metadata.stops) {
+                if real_stop_times.len() == 0 || *real_stop_times.last().unwrap() == None {
+                    return false // we only generate training features once we reached the last stop
+                }
+
+                // convert scheduled stop times to useful timestamps
+                let end_date = NaiveDateTime::from_timestamp_millis(vehicle.timestamp as i64 * 1000).unwrap().date();
+                let mut scheduled_times = stops.iter().map(|x| end_date.and_time(NaiveTime::parse_from_str(&x.arrival_time, "%H:%M:%S").unwrap())).collect::<Vec<NaiveDateTime>>();
+                // if the trip ended past midnight, we need to fix the scheduled dates for stops before midnight
+                for i in (1..scheduled_times.len()).rev() {
+                    if scheduled_times[i] < scheduled_times[i-1] {
+                        scheduled_times[i-1] -= Duration::days(1);
                     }
                 }
+                let scheduled_timestamps = scheduled_times.iter().map(|x| x.timestamp()).collect::<Vec<i64>>();
+
+                // construct sequence
+                let route_token = tokenize_route(vehicle_metadata.route_id.as_ref().unwrap(), vehicle_metadata.direction_id.unwrap());
+                let (day_token, hour_token) = tokenize_time(scheduled_times[0]);
+                let mut sequence = TrainingSequence(vec![Token(31), route_token, day_token, hour_token]);
+                sequence.0.push(tokenize_stop_name(&stops[0].stop_name));
+                sequence.0.push(tokenize_time_delta(0)); // 0m time_delta
+
+                let mut prev_delay = 0;
+                for (i, stop) in stops[1..].iter().enumerate() {
+                    sequence.0.push(tokenize_stop_name(&stop.stop_name));
+                    if let Some(real_time) = real_stop_times[i] {
+                        let new_delay = real_time as i64 - scheduled_timestamps[i];
+                        sequence.0.push(tokenize_time_delta(new_delay - prev_delay));
+                        prev_delay = new_delay;
+                    } else {
+                        sequence.0.push(tokenize_time_delta(0));
+                    }
+                }
+                sequence.0.push(Token(32)); // end of sequence
+                while sequence.0.len() < 75 {
+                    sequence.0.push(Token(33)); // pad to 75
+                }
+                writeln!(&mut self.writer, "{:?}", sequence.0.into_iter().map(|t| t.0).collect::<Vec<u64>>()).unwrap();
+                self.writer.flush().unwrap();
             }
         }
-
-        // in this function, we used the Rc<RefCell<Vehicle>>> we created in the beginning
-        // now we need to update the vehicle in the stream from it
-        *vehicle = vehicle_rc.borrow().clone();
+        false
     }
-}
-
-/// Returns the distance in meters between two lat lon coordinates.
-fn measure_distance(lat1: f32, lon1: f32, lat2: f32, lon2: f32) -> f32 {
-    const R: f32 = 6378.137; // Radius of earth in KM
-    let d_lat = lat2 * PI / 180.0 - lat1 * PI / 180.0;
-    let d_lon = lon2 * PI / 180.0 - lon1 * PI / 180.0;
-    let a = (d_lat/2.0).sin() * (d_lat/2.0).sin() +
-    (lat1 * PI / 180.0).cos() * (lat2 * PI / 180.0).cos() *
-    (d_lon/2.0).sin() * (d_lon/2.0).sin();
-    let c = 2.0 * a.sqrt().atan2((1.0-a).sqrt());
-    let d = R * c;
-    return d * 1000.0; // meters
 }

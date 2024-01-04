@@ -16,7 +16,11 @@ services:
   event-engine:
     container_name: event-engine
     image: fabianzeiher/sparkling-event-engine
-    build: ./event-engine 
+    build: 
+      context: ./event-engine 
+      dockerfile: ./debug.Dockerfile
+    volumes:
+      - ./training-data:/training-data:Z
     depends_on:
       - sparkling-redis
     networks:
@@ -27,18 +31,18 @@ services:
       - .env
     restart: on-failure
 
-  web:
-    container_name: web-app
-    image: fabianzeiher/sparkling-app
-    build: ./website
-    depends_on:
-      - event-engine
-      - sparkling-redis
-    ports:
-      - "80:8080"
-    networks:
-      - sparkling-bridge
-    restart: on-failure
+  # web:
+  #   container_name: web-app
+  #   image: fabianzeiher/sparkling-app
+  #   build: ./website
+  #   depends_on:
+  #     - event-engine
+  #     - sparkling-redis
+  #   ports:
+  #     - "80:8080"
+  #   networks:
+  #     - sparkling-bridge
+  #   restart: on-failure
   
   # rt-data-exporter:
   #   container_name: rt-data-exporter
