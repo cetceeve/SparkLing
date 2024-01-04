@@ -10,7 +10,7 @@ use prost::Message;
 use reqwest;
 use std::env;
 use std::time::Duration;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::Sender;
 use tokio::time::sleep;
 use transit_realtime::{FeedMessage, VehicleDescriptor, VehiclePosition};
 
@@ -36,7 +36,7 @@ lazy_static! {
 }
 
 /// Starts the realtime GTFS API clients that poll for vehicle position updates from Samtrafiken
-pub fn start_vehicle_position_clients(sender: UnboundedSender<Vehicle>) {
+pub fn start_vehicle_position_clients(sender: Sender<Vehicle>) {
     for agency in TRANSPORT_AGENCIES.iter() {
         let sender_clone = sender.clone();
         let url = format!(
@@ -49,7 +49,7 @@ pub fn start_vehicle_position_clients(sender: UnboundedSender<Vehicle>) {
     }
 }
 
-async fn run_client(url: String, interval: Duration, sender: UnboundedSender<Vehicle>) {
+async fn run_client(url: String, interval: Duration, sender: Sender<Vehicle>) {
     let client = reqwest::Client::builder().gzip(true).build().unwrap();
     let mut last_updated_time = chrono::Utc::now();
     loop {
@@ -84,7 +84,7 @@ async fn run_client(url: String, interval: Duration, sender: UnboundedSender<Veh
                                     timestamp: ts,
                                     metadata: None,
                                 };
-                                sender.send(vehicle).expect("internal channel broken");
+                                sender.send(vehicle).await.expect("internal channel broken");
                             }
                         }
                     } else {

@@ -1,5 +1,5 @@
 use crate::Vehicle;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 mod metadata_join;
 mod stop_detector;
@@ -49,8 +49,8 @@ impl StreamProcessor {
 
     pub async fn run(
         &mut self,
-        mut receiver: UnboundedReceiver<Vehicle>,
-        sender: UnboundedSender<Vehicle>,
+        mut receiver: Receiver<Vehicle>,
+        sender: Sender<Vehicle>,
     ) {
         'EVENT_LOOP: loop {
             let mut vehicle = receiver.recv().await.expect("broken internal channel");
@@ -70,7 +70,7 @@ impl StreamProcessor {
                 }
             }
 
-            sender.send(vehicle).expect("broken internal channel");
+            sender.send(vehicle).await.expect("broken internal channel");
         }
     }
 }
