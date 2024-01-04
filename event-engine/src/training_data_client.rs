@@ -57,8 +57,8 @@ impl TrainingDataClient {
     pub async fn run(&mut self, sender: Sender<Vehicle>) {
         let client = Client::new(ClientConfig::default().anonymous());
 
-        while self.file_index <= self.files.len() {
-            println!("Processing file index {:?}/{:?}", self.file_index, self.files.len());
+        while self.file_index < self.files.len() {
+            println!("Processing file {:?}/{:?}", self.file_index+1, self.files.len());
             let csv_file = get_file(&client, self.files[self.file_index].clone()).await;
             if let Ok(rows) = csv_file {
                 for record in rows {

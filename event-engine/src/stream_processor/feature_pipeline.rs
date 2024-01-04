@@ -83,12 +83,12 @@ impl ProcessingStep for TrainingFeatureExtractor {
                     return false // only emit features once per trip
                 }
                 self.duplicate_filter.insert(vehicle.trip_id.clone().unwrap());
+                if stops.iter().any(|x| x.arrival_time.starts_with("24") || x.arrival_time.starts_with("25") || x.arrival_time.starts_with("26") || x.arrival_time.starts_with("27") || x.arrival_time.starts_with("28") || x.arrival_time.starts_with("29") || x.arrival_time.starts_with("30")) {
+                    return false // we don't deal with funny timestamps
+                }
 
                 // convert scheduled stop times to useful timestamps
                 let end_date = NaiveDateTime::from_timestamp_millis(vehicle.timestamp as i64 * 1000).unwrap().date();
-                if stops.iter().any(|x| x.arrival_time.starts_with("24") || x.arrival_time.starts_with("25")) {
-                    return false // we don't deal with funny timestamps
-                }
                 let mut scheduled_times = stops.iter().map(|x| {
                     end_date.and_time(NaiveTime::parse_from_str(&x.arrival_time, "%H:%M:%S").expect(format!("Failed to parse: {:x?}", x).as_str()))
                 }).collect::<Vec<NaiveDateTime>>();
