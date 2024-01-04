@@ -53,6 +53,7 @@ impl TrainingDataClient {
     }
 
     /// Continously downloads training data from google storage and pushes into sender
+    /// Currently configured to only return metros
     pub async fn run(&mut self, sender: Sender<Vehicle>) {
         let client = Client::new(ClientConfig::default().anonymous());
 
@@ -61,15 +62,18 @@ impl TrainingDataClient {
             let csv_file = get_file(&client, self.files[self.file_index].clone()).await;
             if let Ok(rows) = csv_file {
                 for record in rows {
-                    // Send with backpressure!
-                    sender.send(Vehicle {
-                        id: record.id,
-                        lng: record.lng,
-                        lat: record.lat,
-                        timestamp: record.timestamp,
-                        trip_id: record.trip_id,
-                        metadata: None,
-                    }).await.expect("Internal channel broken.");
+                    // Only send metros
+                    if record.route_type == Some(401) {
+                        // Send with backpressure!
+                        sender.send(Vehicle {
+                            id: record.id,
+                            lng: record.lng,
+                            lat: record.lat,
+                            timestamp: record.timestamp,
+                            trip_id: record.trip_id,
+                            metadata: None,
+                        }).await.expect("Internal channel broken.");
+                    }
                 }
                 self.file_index = self.file_index + 1;
             } else {
