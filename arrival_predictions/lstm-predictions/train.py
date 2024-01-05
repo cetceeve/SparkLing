@@ -19,7 +19,7 @@ print("Training samples:", len(dataset_train))
 print("Validation samples:", len(dataset_val))
 print("Test samples:", len(dataset_test))
 
-batch_size = 64
+batch_size = 32
 # think about shuffling or not
 train_loader = tud.DataLoader(dataset_train, batch_size=batch_size, num_workers=0)
 val_loader = tud.DataLoader(dataset_val, batch_size=batch_size, num_workers=0)
@@ -29,14 +29,14 @@ test_loader = tud.DataLoader(dataset_test, batch_size=batch_size, num_workers=0)
 # load model
 model = MetroPredictionLSTM(
     vocab_size=dataset.vocab_size,
-    hidden_size=256,
+    hidden_size=128,
     num_layers=3,
-    dropout=0.05,
+    dropout=0.1,
     pad_index=dataset.pad_idx,
 )
 """
 model = MetroPredictionLSTM.load_from_checkpoint(
-    "tb_logs/metro-delay-logger/version_1/checkpoints/epoch=120-step=3267.ckpt"
+    "tb_logs/metro-delay-logger/version_9/checkpoints/epoch=108-step=2943.ckpt"
 )
 """
 
