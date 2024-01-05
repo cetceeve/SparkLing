@@ -12,7 +12,7 @@ torch.multiprocessing.set_sharing_strategy("file_system")
 torch.manual_seed(0)
 
 # load dataset
-dataset = MetroDelayDataset(data_file="./data/training_data.csv", vocab_file="./data/training_data_vocab.json")
+dataset = MetroDelayDataset(data_file="./data/training_data.txt", vocab_file="./data/training_data_vocab.json")
 dataset_train, dataset_val, dataset_test = tud.random_split(dataset, [0.7, 0.15, 0.15])
 print("Vocab size:", dataset.vocab_size)
 print("Training samples:", len(dataset_train))
