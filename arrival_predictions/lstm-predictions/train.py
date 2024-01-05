@@ -19,7 +19,7 @@ print("Training samples:", len(dataset_train))
 print("Validation samples:", len(dataset_val))
 print("Test samples:", len(dataset_test))
 
-batch_size = 32
+batch_size = 128
 # think about shuffling or not
 train_loader = tud.DataLoader(dataset_train, batch_size=batch_size, num_workers=0)
 val_loader = tud.DataLoader(dataset_val, batch_size=batch_size, num_workers=0)
@@ -29,8 +29,8 @@ test_loader = tud.DataLoader(dataset_test, batch_size=batch_size, num_workers=0)
 # load model
 model = MetroPredictionLSTM(
     vocab_size=dataset.vocab_size,
-    hidden_size=128,
-    num_layers=3,
+    hidden_size=64,
+    num_layers=1,
     dropout=0.1,
     pad_index=dataset.pad_idx,
 )

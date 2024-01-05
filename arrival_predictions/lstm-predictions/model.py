@@ -27,9 +27,12 @@ class MetroPredictionLSTM(pl.LightningModule):
             embeddings=torch.eye(self.vocab_size), freeze=True
         )
 
+        # Make actual embedding
+        self.embedding = nn.Embedding(self.vocab_size, 64);
+
         # 
         self.lstm = nn.LSTM(
-            input_size=vocab_size,
+            input_size=64,
             hidden_size=hidden_size,
             num_layers=num_layers,
             batch_first=True, # needed because of the embedding
@@ -47,7 +50,7 @@ class MetroPredictionLSTM(pl.LightningModule):
     def forward(self, X):
         # one-hot
         # (batch_size, sequence_length) -> (batch_size, sequence_length, vocab_size)
-        embedded_input = self.one_hot(X)
+        embedded_input = self.embedding(X)
 
         # LSTM
         # (batch_size, sequence_length, vocab_size) -> (batch_size, sequence_length, hidden_size)
@@ -145,5 +148,5 @@ class MetroPredictionLSTM(pl.LightningModule):
     #     return sample.item()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=1 * 1e-3)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=5 * 1e-3)
         return optimizer
