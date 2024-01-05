@@ -7,12 +7,27 @@ import numpy as np
 from dictionary import create_vocabulary
 
 class MetroDelayDataset(tud.Dataset):
-    def __init__(self, data_file: str, vocab_file: str):
+    def __init__(self, data_file: str, vocab_file: str, feature_store):
         self.max_sequence_length = 75
         self.text_to_token = {}
         self.token_to_text = {}
-        self.data = np.loadtxt(data_file, dtype=int, delimiter=",")
 
+        fg = feature_store.get_feature_group(
+            name="metro",
+            version=2,
+        )
+        query = fg.select_all()
+        feature_view = feature_store.get_or_create_feature_view(
+            name="metro",
+            version=1,
+            description="Read the metro sequence dataset",
+            query=query
+        )
+        # Returns all features as training data and an empty label df
+        X , _ = feature_view.training_data()
+        print("Training data:")
+        print(X)
+        self.data = X.to_numpy(int)
         
         try:
             with open(vocab_file, "r") as f:
