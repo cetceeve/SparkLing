@@ -3,6 +3,7 @@ import torch.utils.data as tud
 import torch.nn.functional as F
 import json
 import numpy as np
+from numpy import float32
 
 from dictionary import create_vocabulary
 
@@ -24,10 +25,28 @@ class MetroDelayDataset(tud.Dataset):
             query=query
         )
         # Returns all features as training data and an empty label df
-        X , _ = feature_view.training_data()
-        print("Training data:")
-        print(X)
-        self.data = X.to_numpy(int)
+        df , _ = feature_view.training_data()
+        # print("Training data:")
+        # print(X)
+        # self.data = X.to_numpy(int)
+
+        X = []
+        Y = []
+        for i in range(len(df)):
+            row = df.loc[i]
+            j = 7
+            while j < len(row) and row[j] != 33:
+                x = list(row)
+                Y.append(float(x[j] - 15))
+                # Y.append(x[j])
+                for q in range(j, len(x)):
+                    x[q] = 33
+                X.append(x)
+                j += 2
+
+        self.X = np.array(X, dtype=int)
+        self.Y = np.array(Y, dtype=float32)
+        self.data = self.X
         
         try:
             with open(vocab_file, "r") as f:
@@ -78,4 +97,5 @@ class MetroDelayDataset(tud.Dataset):
 
     def __getitem__(self, idx):
         # training data is just shifted sequence
-        return (torch.from_numpy(self.data[idx][:-1]), torch.from_numpy(self.data[idx][1:]))
+        # return (torch.from_numpy(self.data[idx][:-1]), torch.from_numpy(self.data[idx][1:]))
+        return (torch.from_numpy(self.X[idx]), torch.from_numpy(self.Y[idx].reshape(1)))

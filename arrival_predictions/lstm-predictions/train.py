@@ -28,12 +28,11 @@ print("Training samples:", len(dataset_train))
 print("Validation samples:", len(dataset_val))
 print("Test samples:", len(dataset_test))
 
-batch_size = 128
+batch_size = 64
 # think about shuffling or not
 train_loader = tud.DataLoader(dataset_train, batch_size=batch_size, num_workers=0)
 val_loader = tud.DataLoader(dataset_val, batch_size=batch_size, num_workers=0)
 test_loader = tud.DataLoader(dataset_test, batch_size=batch_size, num_workers=0)
-
 
 # load model
 model = MetroPredictionLSTM(
@@ -45,7 +44,7 @@ model = MetroPredictionLSTM(
 )
 """
 model = MetroPredictionLSTM.load_from_checkpoint(
-    "tb_logs/metro-delay-logger/version_9/checkpoints/epoch=108-step=2943.ckpt"
+    "tb_logs/metro-delay-logger/version_21/checkpoints/epoch=66-step=871.ckpt"
 )
 """
 
@@ -104,7 +103,6 @@ joblib.dump(model, model_dir + '/metro_delay_lstm.pkl')
 model = mr.torch.create_model(
     name="metro_delay_model",
     description="PyTorch Lighting LSTM Model predicting the delay at the next stop.",
-    input_example=dataset.data[0],
     model_schema=model_schema,
     metrics=metrics[0]
 )

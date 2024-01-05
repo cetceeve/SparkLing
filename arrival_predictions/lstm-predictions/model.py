@@ -39,10 +39,14 @@ class MetroPredictionLSTM(pl.LightningModule):
         )
         self.prediction_layer = nn.Linear(hidden_size, vocab_size)
 
+        self.regression_layer = nn.Linear(hidden_size, 1)
+
         # -1 select last dimention in our case the vocab
         self.softmax = nn.Softmax(dim=-1)
 
-        self.loss = nn.CrossEntropyLoss(ignore_index=pad_index)
+        # self.loss = nn.CrossEntropyLoss(ignore_index=pad_index)
+
+        self.loss = nn.MSELoss()
 
         self.save_hyperparameters()
 
@@ -58,26 +62,29 @@ class MetroPredictionLSTM(pl.LightningModule):
 
         # prediction
         # (batch_size, sequence_length, hidden_size) -> (batch_size, sequence_length, vocab_size)
-        logits = self.prediction_layer(lstm_out)
+        # logits = self.prediction_layer(lstm_out)
+
+        # regression
+        regression = self.regression_layer(lstm_out[:,-1,:])
 
         # classification
         # (batch_size, sequence_length, vocab_size) -> (batch_size, sequence_length, vocab_size)
         # classification = self.softmax(logits)
-        return logits
+        return regression
 
     def training_step(self, train_batch, batch_idx):
         x, y = train_batch
         # swapaxes needed because
         # forward.output.dim = (batch_size, sequence_length, vocab_size)
         # loss.input.dim = (batch_size, num_targets, ...rest)
-        x_hat = self.forward(x).swapaxes(1, 2)
+        x_hat = self.forward(x)
         loss = self.loss(x_hat, y)
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, val_batch, batch_idx):
         x, y = val_batch
-        x_hat = self.forward(x).swapaxes(1, 2)
+        x_hat = self.forward(x)
         loss = self.loss(x_hat, y)
         self.log("val_loss", loss)
         self.log("hp_metric", loss)
@@ -85,7 +92,7 @@ class MetroPredictionLSTM(pl.LightningModule):
 
     def test_step(self, test_batch, batch_idx):
         x, y = test_batch
-        x_hat = self.forward(x).swapaxes(1, 2)
+        x_hat = self.forward(x)
         loss = self.loss(x_hat, y)
         self.log("test_loss", loss)
         return loss
