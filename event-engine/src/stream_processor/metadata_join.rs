@@ -63,12 +63,12 @@ impl MetadataJoiner {
 }
 
 impl ProcessingStep for MetadataJoiner {
-    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> bool {
+    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> (bool, Option<(String, Vec<u8>)>) {
         if let Some(ref trip_id) = vehicle.trip_id {
             vehicle.metadata = self.table.get(trip_id).map(|x| x.to_owned());
-            true
+            (true, None)
         } else {
-            false
+            (false, None)
         }
     }
 }

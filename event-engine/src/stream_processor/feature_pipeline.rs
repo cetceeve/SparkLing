@@ -1,6 +1,5 @@
 use std::collections::HashSet;
-use std::fs::{OpenOptions, File};
-use std::io::{Write, BufWriter};
+use std::io::Write;
 
 use crate::Vehicle;
 use chrono::{NaiveDateTime, Timelike, Datelike, NaiveTime, Duration};
@@ -48,43 +47,35 @@ pub fn tokenize_time(ts: NaiveDateTime) -> (Token, Token) {
 }
 
 pub struct TrainingFeatureExtractor {
-    writer: BufWriter<File>,
     duplicate_filter: HashSet<String>,
 }
 
 impl TrainingFeatureExtractor {
     pub fn init() -> Self {
-        let file = OpenOptions::new()
-            .write(true)
-            .append(true)
-            .create(true)
-            .open("/training-data/training_data.csv")
-            .unwrap();
         Self {
-            writer: BufWriter::new(file),
             duplicate_filter: Default::default(),
         }
     }
 }
 
 impl ProcessingStep for TrainingFeatureExtractor {
-    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> bool {
+    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> (bool, Option<(String, Vec<u8>)>) {
         // get metadata if there
         if let Some(ref vehicle_metadata) = vehicle.metadata {
             // we only deal with metros
             if vehicle_metadata.route_type != Some(401) {
-                return false
+                return (true, None)
             }
             if let (Some(real_stop_times), Some(stops)) = (&vehicle_metadata.real_stop_times, &vehicle_metadata.stops) {
                 if real_stop_times.len() < 3 || *real_stop_times.last().unwrap() == None || real_stop_times.iter().filter(|x| **x == None).count() > stops.len() / 2 {
-                    return false // we only generate training features once we reached the last stop
+                    return (true, None) // we only generate training features once we reached the last stop
                 }
                 if self.duplicate_filter.contains(vehicle.trip_id.as_ref().unwrap()) {
-                    return false // only emit features once per trip
+                    return (true, None) // only emit features once per trip
                 }
                 self.duplicate_filter.insert(vehicle.trip_id.clone().unwrap());
                 if stops.iter().any(|x| x.arrival_time.starts_with("24") || x.arrival_time.starts_with("25") || x.arrival_time.starts_with("26") || x.arrival_time.starts_with("27") || x.arrival_time.starts_with("28") || x.arrival_time.starts_with("29") || x.arrival_time.starts_with("30")) {
-                    return false // we don't deal with funny timestamps
+                    return (true, None) // we don't deal with funny timestamps
                 }
 
                 // convert scheduled stop times to useful timestamps
@@ -123,10 +114,15 @@ impl ProcessingStep for TrainingFeatureExtractor {
                 while sequence.0.len() < 75 {
                     sequence.0.push(Token(33)); // pad to 75
                 }
-                writeln!(&mut self.writer, "{:?}", sequence.0.into_iter().map(|t| t.0).collect::<Vec<u64>>()).unwrap();
-                self.writer.flush().unwrap();
+                // write to disk
+                let mut serialized: Vec<u8> = vec![];
+                write!(&mut serialized, "{:?}", sequence.0[0].0).unwrap();
+                for token in sequence.0[1..].iter() {
+                    write!(&mut serialized, ",{:?}", token.0).unwrap();
+                }
+                return (true, Some(("lstm-training-features".to_string(), serialized)))
             }
         }
-        false
+        (true, None)
     }
 }

@@ -1,5 +1,6 @@
 use crate::Vehicle;
 use tokio::sync::mpsc::{Receiver, Sender};
+use redis::AsyncCommands;
 
 mod metadata_join;
 mod stop_detector;
@@ -11,9 +12,11 @@ use self::metadata_join::MetadataJoiner;
 use self::stop_detector::StopDetector;
 
 pub trait ProcessingStep: Send {
-    /// May mutate the vehicle, or remove it from the stream, by returning `false`.
+    /// May mutate the vehicle, or remove it from the stream, by returning `(false, _)`.
+    /// May return an arbitrary binary message to publish to redis on a topic by returning `(_, Some(topic_name, msg))`
+    ///
     /// low_watermark is the lowest event timestamp a following vehicle may have.
-    fn apply(&mut self, vehicle: &mut Vehicle, low_watermark: u64) -> bool;
+    fn apply(&mut self, vehicle: &mut Vehicle, low_watermark: u64) -> (bool, Option<(String, Vec<u8>)>);
 }
 
 /// Processes a steam of Vehicle events.
@@ -52,6 +55,8 @@ impl StreamProcessor {
         mut receiver: Receiver<Vehicle>,
         sender: Sender<Vehicle>,
     ) {
+        let redis_client = redis::Client::open("redis://sparkling-redis/").unwrap();
+        let mut redis_conn = redis_client.get_tokio_connection().await.unwrap();
         'EVENT_LOOP: loop {
             let mut vehicle = receiver.recv().await.expect("broken internal channel");
 
@@ -64,7 +69,10 @@ impl StreamProcessor {
 
             // precessing steps
             for step in &mut self.processing_steps {
-                let keep_vehicle = step.apply(&mut vehicle, self.low_watermark);
+                let (keep_vehicle, message) = step.apply(&mut vehicle, self.low_watermark);
+                if let Some((topic_name, data)) = message {
+                    redis_conn.publish::<_,_,()>(topic_name, data).await.unwrap();
+                }
                 if !keep_vehicle {
                     continue 'EVENT_LOOP
                 }

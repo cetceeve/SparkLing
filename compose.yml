@@ -43,6 +43,18 @@ services:
   #   networks:
   #     - sparkling-bridge
   #   restart: on-failure
+
+  feature-uploader:
+    container_name: feature-uploader
+    image: jonathanarns/sparkling-feature-uploader
+    build: ./feature-uploader
+    depends_on:
+      - event-engine
+      - sparkling-redis
+    environment:
+      - HOPSWORKS_API_KEY=xeGPnniOH3cfGuJO.6nla3wNJhymV9If3eIVmAUJQgPukpxKPHD6ctTEWTtpm2kmceRJOsgEyR6x0nSrW
+    networks:
+      - sparkling-bridge
   
   # rt-data-exporter:
   #   container_name: rt-data-exporter
