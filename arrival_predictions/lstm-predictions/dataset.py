@@ -42,16 +42,16 @@ class MetroDelayDataset(tud.Dataset):
         #             (torch.LongTensor(seq[:-1]), torch.LongTensor(seq[1:]))
         #         )
 
-    @property
-    def sos_token(self):
-        return self.text_to_token["<sos>"]
+    # @property
+    # def sos_idx(self):
+    #     return self.text_to_token["<sos>"]
+
+    # @property
+    # def eos_idx(self):
+    #     return self.text_to_token["<eos>"]
 
     @property
-    def eos_token(self):
-        return self.text_to_token["<eos>"]
-
-    @property
-    def pad_token(self):
+    def pad_idx(self):
         return self.text_to_token["<pad>"]
 
     @property
@@ -63,4 +63,4 @@ class MetroDelayDataset(tud.Dataset):
 
     def __getitem__(self, idx):
         # training data is just shifted sequence
-        return (self.data[idx][:-1], self.data[idx][1:])
+        return (torch.from_numpy(self.data[idx][:-1]), torch.from_numpy(self.data[idx][1:]))

@@ -13,28 +13,35 @@ torch.manual_seed(0)
 
 # load dataset
 dataset = MetroDelayDataset(data_file="./data/training_data.csv", vocab_file="./data/training_data_vocab.json")
-dataset_train, dataset_val = tud.random_split(dataset, [0.95, 0.05])
+dataset_train, dataset_val, dataset_test = tud.random_split(dataset, [0.7, 0.15, 0.15])
+print("Vocab size:", dataset.vocab_size)
+print("Training samples:", len(dataset_train))
+print("Validation samples:", len(dataset_val))
+print("Test samples:", len(dataset_test))
 
 batch_size = 64
-train_loader = tud.DataLoader(dataset_train, batch_size=batch_size, num_workers=8)
-val_loader = tud.DataLoader(dataset_val, batch_size=batch_size, num_workers=8)
+# think about shuffling or not
+train_loader = tud.DataLoader(dataset_train, batch_size=batch_size, num_workers=0)
+val_loader = tud.DataLoader(dataset_val, batch_size=batch_size, num_workers=0)
+test_loader = tud.DataLoader(dataset_test, batch_size=batch_size, num_workers=0)
 
 
 # load model
-model = FolkRNN(
+model = MetroPredictionLSTM(
     vocab_size=dataset.vocab_size,
-    hidden_size=512,
+    hidden_size=256,
     num_layers=3,
-    dropout=0.5,
-    pad_index=dataset.pad_token,
+    dropout=0.05,
+    pad_index=dataset.pad_idx,
 )
 """
-model = FolkRNN.load_from_checkpoint(
-    "tb_logs/folkRNN/version_1/checkpoints/epoch=20-step=6636.ckpt"
+model = MetroPredictionLSTM.load_from_checkpoint(
+    "tb_logs/metro-delay-logger/version_1/checkpoints/epoch=120-step=3267.ckpt"
 )
 """
+
 # logger
-logger = pll.TensorBoardLogger("tb_logs", name="folkRNN-longer")
+logger = pll.TensorBoardLogger("tb_logs", name="metro-delay-logger")
 
 # training
 trainer = pl.Trainer(
@@ -42,7 +49,7 @@ trainer = pl.Trainer(
     min_epochs=10,
     max_epochs=200,
     logger=logger,
-    gradient_clip_val=5,
+    gradient_clip_val=None,
     callbacks=[
         # Early stopping
         plc.EarlyStopping(

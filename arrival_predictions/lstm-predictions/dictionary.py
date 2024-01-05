@@ -81,11 +81,11 @@ def create_vocabulary():
         "text_to_token": text_to_token
     }
 
-def main():
-    vocabs = create_vocabulary()
-    with open(f"data/training_data_vocab.json", "w") as df:
-        json.dump(vocabs, df, ensure_ascii=False)
-        print("Saved Vocabulary.")
+# def main():
+#     vocabs = create_vocabulary()
+#     with open(f"data/training_data_vocab.json", "w") as df:
+#         json.dump(vocabs, df, ensure_ascii=False)
+#         print("Saved Vocabulary.")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
