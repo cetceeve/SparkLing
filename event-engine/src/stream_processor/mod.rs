@@ -7,7 +7,7 @@ mod stop_detector;
 mod feature_pipeline;
 mod inference_pipeline;
 
-use self::feature_pipeline::TrainingFeatureExtractor;
+use self::feature_pipeline::{TrainingFeatureExtractor, InferenceFeatureExtractor};
 use self::metadata_join::MetadataJoiner;
 use self::stop_detector::StopDetector;
 
@@ -47,6 +47,7 @@ impl StreamProcessor {
         processor.register_step(Box::new(MetadataJoiner::init().await));
         processor.register_step(Box::new(StopDetector::init()));
         processor.register_step(Box::new(TrainingFeatureExtractor::init()));
+        processor.register_step(Box::new(InferenceFeatureExtractor::init()));
         processor
     }
 

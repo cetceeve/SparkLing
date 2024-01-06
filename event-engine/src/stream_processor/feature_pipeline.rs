@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::io::Write;
 
 use crate::Vehicle;
@@ -44,6 +44,102 @@ pub fn tokenize_time(ts: NaiveDateTime) -> (Token, Token) {
         Token(150 + ts.weekday().num_days_from_monday() as u64),
         Token(157 + ts.hour() as u64)
     )
+}
+
+pub struct InferenceFeatureExtractor {
+    highest_reached_stop_idx: HashMap<String, usize>,
+}
+
+impl InferenceFeatureExtractor {
+    pub fn init() -> Self {
+        Self {
+            highest_reached_stop_idx: Default::default(),
+        }
+    }
+}
+
+impl ProcessingStep for InferenceFeatureExtractor {
+    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> (bool, Option<(String, Vec<u8>)>) {
+        // get metadata if there
+        if let Some(ref vehicle_metadata) = vehicle.metadata {
+            // we only deal with metros
+            if vehicle_metadata.route_type != Some(401) {
+                return (true, None)
+            }
+            if let (Some(real_stop_times), Some(stops)) = (&vehicle_metadata.real_stop_times, &vehicle_metadata.stops) {
+                if stops.len() < 3 { // sequence too short, we don't predict here
+                    return (true, None)
+                }
+                let mut new_highest_idx = 0;
+                for i in (0..stops.len()).rev() {
+                    if real_stop_times[i] != None {
+                        new_highest_idx = i;
+                        break
+                    }
+                }
+                let old_highest_idx = self.highest_reached_stop_idx.get(&vehicle.id);
+                if Some(&new_highest_idx) == old_highest_idx {
+                    return (true, None) // we already predicted here, need to reach next stop first
+                } else { // otherwise, we update the highest index we predicted at and do a prediction
+                    self.highest_reached_stop_idx.insert(vehicle.id.clone(), new_highest_idx);
+                }
+                if stops.iter().any(|x| x.arrival_time.starts_with("24") || x.arrival_time.starts_with("25") || x.arrival_time.starts_with("26") || x.arrival_time.starts_with("27") || x.arrival_time.starts_with("28") || x.arrival_time.starts_with("29") || x.arrival_time.starts_with("30")) {
+                    return (true, None) // we don't deal with funny timestamps
+                }
+
+                // convert scheduled stop times to useful timestamps
+                let end_date = NaiveDateTime::from_timestamp_millis(vehicle.timestamp as i64 * 1000).unwrap().date();
+                let mut scheduled_times = stops.iter().map(|x| {
+                    end_date.and_time(NaiveTime::parse_from_str(&x.arrival_time, "%H:%M:%S").expect(format!("Failed to parse: {:x?}", x).as_str()))
+                }).collect::<Vec<NaiveDateTime>>();
+                // if the trip ended past midnight, we need to fix the scheduled dates for stops before midnight
+                for i in (1..scheduled_times.len()).rev() {
+                    if scheduled_times[i] < scheduled_times[i-1] {
+                        scheduled_times[i-1] -= Duration::days(1);
+                    }
+                }
+                // we need to subtract 1h for some reason, maybe trafiklab uses timezones inconsistently
+                let scheduled_timestamps = scheduled_times.iter().map(|x| x.timestamp() - 3600).collect::<Vec<i64>>();
+
+                // construct sequence
+                let route_token = tokenize_route(vehicle_metadata.route_id.as_ref().unwrap(), vehicle_metadata.direction_id.unwrap());
+                let (day_token, hour_token) = tokenize_time(scheduled_times[0]);
+                let mut sequence = TrainingSequence(vec![Token(31), route_token, day_token, hour_token]);
+                sequence.0.push(tokenize_stop_name(&stops[0].stop_name));
+                sequence.0.push(tokenize_time_delta(0)); // 0m time_delta
+
+                // For inference, we generate the same sequence as for training (without <eos>), but we replace the
+                // tokens we want to predict with the <pad> token 33. The inference then needs to
+                // deconstruct this correctly before feeding it to the model.
+                let mut prev_delay = 0;
+                for (i, stop) in stops[1..].iter().enumerate() {
+                    sequence.0.push(tokenize_stop_name(&stop.stop_name));
+                    if i <= new_highest_idx {
+                        if let Some(real_time) = real_stop_times[i] {
+                            let new_delay = real_time as i64 - scheduled_timestamps[i];
+                            sequence.0.push(tokenize_time_delta(new_delay - prev_delay));
+                            prev_delay = new_delay;
+                        } else {
+                            sequence.0.push(tokenize_time_delta(0));
+                        }
+                    } else {
+                        sequence.0.push(Token(33)); // <pad> in places we want to predict
+                    }
+                }
+                while sequence.0.len() < 75 {
+                    sequence.0.push(Token(33)); // pad to 75
+                }
+                // serialize and return to be sent to redis
+                let mut serialized: Vec<u8> = vec![];
+                write!(&mut serialized, "{}:{}", &vehicle.id, sequence.0[0].0).unwrap();
+                for token in sequence.0[1..].iter() {
+                    write!(&mut serialized, ",{}", token.0).unwrap();
+                }
+                return (true, Some(("lstm-inference-features".to_string(), serialized)))
+            }
+        }
+        (true, None)
+    }
 }
 
 pub struct TrainingFeatureExtractor {
@@ -114,11 +210,11 @@ impl ProcessingStep for TrainingFeatureExtractor {
                 while sequence.0.len() < 75 {
                     sequence.0.push(Token(33)); // pad to 75
                 }
-                // write to disk
+                // serialize and return to be sent to redis
                 let mut serialized: Vec<u8> = vec![];
-                write!(&mut serialized, "{:?}", sequence.0[0].0).unwrap();
+                write!(&mut serialized, "{}", sequence.0[0].0).unwrap();
                 for token in sequence.0[1..].iter() {
-                    write!(&mut serialized, ",{:?}", token.0).unwrap();
+                    write!(&mut serialized, ",{}", token.0).unwrap();
                 }
                 return (true, Some(("lstm-training-features".to_string(), serialized)))
             }
