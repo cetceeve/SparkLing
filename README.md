@@ -27,6 +27,8 @@ This dataset was the input for our batch feature pipeline.
 After that, our continuous feature pipeline is now continuously extracting new training samples from the data stream for future model iterations.
 
 ## Architecture
+We built a completely modular machine learning architecture for transitmap, following the best practices we learned in the course.
+
 The below diagram shows transitmap's architecture, including the dataflow through the system.
 Components colored in green are completely new and were added as part of this course project.
 Components colored in yellow existed previously, but were changed in a major way for this course project.
@@ -61,3 +63,6 @@ docker-compose up --build
 ```
 The cluster takes a couple minutes to start fully.
 Once everything is running, you can connect to the application in your browser on [localhost](http://localhost:80).
+
+We recommend running without the feature uploader and the data exporter, since these require private credentials
+for Google Cloud Storage access. They are not required for just running the application and are commented out in the compose file by default.
