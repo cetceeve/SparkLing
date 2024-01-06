@@ -22,19 +22,9 @@ The realtime position updates are a data stream with new events every 3 seconds.
 On average this stream delivers over 4000 events per second and over 100 Million events per day.
 
 Our custom event processing engine combines information from these two datasources in realtime to get a continuous stream of position updates joined with all relevant metadata.
-This combined stream serves as the basis for our problem. We collected the whole stream for 3 weeks, totalling over 2.5 Billion events.
+This combined stream serves as the basis for our problem. We collected the whole stream for 3 weeks, totalling over 2.5 Billion events (~1TB uncompressed json).
 This dataset was the input for our batch feature pipeline.
 After that, our continuous feature pipeline is now continuously extracting new training samples from the data stream for future model iterations.
-
-## Prediction
-
-## LSTM Model
-
-Because we are working with sequence data one of our models was a Recurrent Neural Network for a Sequence to Vector prediction.
-We model our prediction problem like a language model, where the prediction task is to predict the next word.
-In our vocabulary we encode relevant metadata like route, direction, day-of-the-week, time-of-day as well as stops and the current delay in 1 minute intervals between -15 and 15.
-The sequences start with the metadata and continoue with each stop and delay interleaved.
-During inference we provide all the realtime information up to the first stop where we are missing data and let the model predict the delay for the rest of the sequence.
 
 ## Architecture
 We built a completely modular machine learning architecture for transitmap, following the best practices we learned in the course.
@@ -43,7 +33,28 @@ The below diagram shows transitmap's architecture, including the dataflow throug
 Components colored in green are completely new and were added as part of this course project.
 Components colored in yellow existed previously, but were changed in a major way for this course project.
 
-![Transitmap Architecture Dataflow](./architecture-dataflow.png)
+![Transitmap Architecture Dataflow](./readme-images/architecture-dataflow.png)
+
+## Prediction
+
+In order to be able to train a deel learning model on our notebooks, we decided to scale down the prediction problem.
+For this iteration the predictions are limited to metros only.
+From our data we extracted 3561 data samples.
+Essentially, all public transport traffic from the 04.12.2023 to the 25.12.23 was simulated by pushing the collected events through the whole system in accelerated time, to generate training features from the previously collected data.
+
+## LSTM Model
+
+Because we are working with sequence data one of our models was a Recurrent Neural Network for a Sequence to Vector prediction.
+We model our prediction problem similar to a language model, where the prediction task is to predict the next word.
+In our vocabulary we encode relevant metadata like route, direction, day-of-the-week, time-of-day as well as stops and stop to stop delay deltas in 1 minute intervals between -15 and 15.
+The sequences start with the metadata for the specific trip and continoue with each stop and delay interleaved.
+During inference we provide all the realtime information up to the current stop in the trip and let the model predict the delay for the rest of the sequence.
+
+| Parameters  | #Samples  | #Val  | #Test  | Test loss  |
+| ----------- | --------- | ----- | ------ | ---------- |
+| 134k        | 2507      | 537   | 537    | 0.251      |
+
+![LSTM Model Architecture](./readme-images/lstm-model.png)
 
 ## How to run locally
 Transitmap can run locally using docker-compose.
