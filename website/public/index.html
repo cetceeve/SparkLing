@@ -7,17 +7,97 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
      crossorigin=""/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
+<!-- 
+{
+  "displayText": "50 mot Stora Lappkärrsberget",
+  "m": {
+    "trip_id": "14010000619396557",
+    "route_type": 700,
+    "agency_name": "AB Storstockholms Lokaltrafik",
+    "route_short_name": "50",
+    "route_long_name": null,
+    "trip_headsign": "Stora Lappkärrsberget",
+    "shape_id": 1014010000536798000,
+    "route_id": "9011001005000000",
+    "direction_id": 1,
+    "stops": [
+      {
+        "stop_sequence": 1,
+        "stop_id": "9022050009942005",
+        "stop_name": "Odenplan",
+        "arrival_time": "11:12:00",
+        "departure_time": "11:12:00",
+        "stop_lat": 59.343006,
+        "stop_lon": 18.049326,
+        "shape_dist_traveled": 0
+      },
+      {
+        "stop_sequence": 2,
+        "stop_id": "9022050012564002",
+        "stop_name": "Stadsbiblioteket",
+        "arrival_time": "11:13:49",
+        "departure_time": "11:13:49",
+        "stop_lat": 59.344273,
+        "stop_lon": 18.056652,
+        "shape_dist_traveled": 445
+      },
+      {
+        "stop_sequence": 3,
+        "stop_id": "9022050009931002",
+        "stop_name": "Surbrunnsgatan",
+        "arrival_time": "11:15:36",
+        "departure_time": "11:15:36",
+        "stop_lat": 59.346294,
+        "stop_lon": 18.060102,
+        "shape_dist_traveled": 851.84
+      },
+    ],
+    "real_stop_times": null
+  }
+}
+-->
+
 <body style="padding: 0; margin: 0">
-    <div id="map" style="height: 100vh;"></div>
+    <div id="map" style="height: 90vh;"></div>
+    <div x-data x-show="$store.overlay" class="container">
+        <h3 x-data x-text="$store.sv.displayText"></h3>
+        <table>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Stop</th>
+                <th scope="col">Scheduled</th>
+                <th scope="col">Prediction</th>
+              </tr>
+            </thead>
+            <tbody>
+                <template x-data x-for="stop in $store.sv.m.stops">
+                    <tr>
+                      <th scope="row" x-text="stop.stop_sequence"></th>
+                      <td x-text="stop.stop_name"></td>
+                      <td x-text="stop.arrival_time"></td>
+                      <td>todo</td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+        <p x-text="$store.sv.m.agency_name"></p>
+        <pre x-data x-text="JSON.stringify($store.sv, undefined, 2)"></pre>
+        <button x-on:click="$store.overlay = false">Close Vehicle</button> 
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
     <script type="text/javascript" src="https://unpkg.com/leaflet-customlayer@2.1.0/dist/Leaflet.CustomLayer.js"></script>
     <script type="text/javascript" src="./util.js"></script>
     <script type="text/javascript" src="./vehicle.js"></script>
+    <script type="text/javascript" src="./timetable.js"></script>
     <script type="text/javascript" src="./index.js"></script>
 </body>
 

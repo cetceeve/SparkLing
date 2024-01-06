@@ -73,6 +73,7 @@ class Vehicle {
         this.animationStartLatlng = this.realLatlng;
         this.animationStart = timestamp;
         this.animateUntil = timestamp;
+        this.metadata = data.metadata;
     }
     updateData(data, isOnScreen) {
         this.onTrip = data.trip_id ? true : false;
