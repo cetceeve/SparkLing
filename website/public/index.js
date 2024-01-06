@@ -1,3 +1,17 @@
+// data store for reactive ui
+document.addEventListener('alpine:init', () => {
+    Alpine.store('overlay', false),
+    Alpine.store('sv', {
+        displayText: "no vehicle",
+        m: {},
+        
+        update(vehicle) {
+           this.displayText = vehicle.displayText;
+           this.m = vehicle.metadata;
+        }
+    })
+})
+
 // hold references to all vehicles
 const vehicleHM = new Map();
 
@@ -226,6 +240,12 @@ map.on("click", function(e) {
         }
     });
     selectedVehicle = closestVehicle;
+    if (selectedVehicle) {
+        if (selectedVehicle.onTrip) {
+            Alpine.store("overlay", true);
+            Alpine.store("sv").update(selectedVehicle);
+        }
+    }
 });
 map.locate({ watch: true, enableHighAccuracy: true });
 map.on("locationfound", function(e) {
@@ -256,6 +276,11 @@ evtSource.onmessage = (event) => {
         } else if (vehiclesOnScreen.has(vehicle.id)) {
             vehiclesOnScreen.delete(vehicle.id);
         }
+        // Trigger reactive update.
+        // This might not be necessary depending how alpine stores are implemented
+        // if (vehicle.id === selectedVehicle.id) {
+        //     Alpine.store("sv").update(vehicle);
+        // }
     } else {
         let vehicle = new Vehicle(data);
         vehicleHM.set(vehicle.id, vehicle);
