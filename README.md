@@ -1,9 +1,34 @@
-# SparkLing
+# Transitmap
 
-SparkLing is an interactive realtime visualisation of all public transport in Sweden (or those parts of it that have realtime geolocations, anyway).
+[transitmap.io](https://transitmap.io) is an interactive realtime visualisation of all public transport in Sweden (or those parts of it that have realtime geolocations, anyway).
+
+In the scope of the final project for the scalable machine learning course at KTH, we added timetables for all vehicles to the map,
+and implemented a realtime stop arrival detection and future delay prediction for all metro vehicles.
+
+This work included collecting a large dataset from the continuous stream of position updates and metadata,
+implementing a fully modular machine learning pipeline for the delay prediction, and integrating that with the existing architecture of transitmap.
+In the following we will describe our data, each component of the machine learning pipeline, and how everything fits into the overall architecture.
+
+## Data
+We are working with the publically available public transport data available from Trafiklab for all of Sweden.
+This includes timetable data including metadata for all of Sweden, as well as a stream of realtime vehicle position updates for many transport agencies.
+The timetable is in the static GTFS data format and is updates once per day.
+The realtime position updates are a data stream with new events every 3 seconds.
+On average this stream delivers over 4000 events per second and over 100 Million events per day.
+
+Our custom event processing engine combines information from these two datasources in realtime, to get a continuous stream of position updates with metadata.
+This combined stream serves as the basis for our prediction problem. We collected the whole stream for 3 weeks, totalling over 2.5 Billion events in total.
+This dataset was the input for our batch feature pipeline.
+After that, our continuous feature pipeline is now continuously extracting new training samples from the data stream for future model iterations.
+
+## Architecture
+The below diagram shows transitmap's architecture, including the dataflow through the system.
+Components colored in green are completely new and were added as part of this course project.
+Components colored in yellow existed previously, but were changed in a major way for this course project.
+![./Transitmap Architecture Dataflow](./Transitmap Architecture Dataflow Colored.png)
 
 ## How to run locally
-SparkLing can run locally inside docker-compose.
+Transitmap can run locally using docker-compose.
 This requires a small amount of setup, as follows.
 
 ### TrafikLab API Keys
