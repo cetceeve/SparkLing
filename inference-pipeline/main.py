@@ -38,7 +38,12 @@ for msg in sub.listen():
     delay = 0
     output = [int(delay)]
     for token in pred[5::2]: # L[start:stop:step]
-        delay += token - 15
+        if token > 30:
+            # ignore non delay tokens
+            delay += 0
+        else:
+            delay += token - 15
+
         output.append(int(delay))
 
     r.publish("realtime-with-metadata", json.dumps({"id": vehicle_id, "delay": output}))
