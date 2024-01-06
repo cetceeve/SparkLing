@@ -1,0 +1,5 @@
+redis
+hopsworks
+pandas
+joblib
+lightning
