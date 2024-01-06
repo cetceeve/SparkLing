@@ -4,6 +4,7 @@ class Vehicle {
         this.onTrip = false;
         this.realLatLng = [data.lat, data.lng];
         this.animationStart = performance.now();
+        this.delay = [];
         this.updateData(data, false);
     }
 

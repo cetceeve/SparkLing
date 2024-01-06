@@ -12,54 +12,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
-<!-- 
-{
-  "displayText": "50 mot Stora Lappkärrsberget",
-  "vehicle": {
-    "tripId": "14010000619396557",
-    "routeType": 700,
-    "agencyName": "AB Storstockholms Lokaltrafik",
-    "routeShortName": "50",
-    "routeLongName": null,
-    "tripHeadsign": "Stora Lappkärrsberget",
-    "stops": [
-      {
-        "stop_sequence": 1,
-        "stop_id": "9022050009942005",
-        "stop_name": "Odenplan",
-        "arrival_time": "11:12:00",
-        "departure_time": "11:12:00",
-        "stop_lat": 59.343006,
-        "stop_lon": 18.049326,
-        "shape_dist_traveled": 0
-      },
-      {
-        "stop_sequence": 2,
-        "stop_id": "9022050012564002",
-        "stop_name": "Stadsbiblioteket",
-        "arrival_time": "11:13:49",
-        "departure_time": "11:13:49",
-        "stop_lat": 59.344273,
-        "stop_lon": 18.056652,
-        "shape_dist_traveled": 445
-      },
-      {
-        "stop_sequence": 3,
-        "stop_id": "9022050009931002",
-        "stop_name": "Surbrunnsgatan",
-        "arrival_time": "11:15:36",
-        "departure_time": "11:15:36",
-        "stop_lat": 59.346294,
-        "stop_lon": 18.060102,
-        "shape_dist_traveled": 851.84
-      },
-    ],
-    "realStopTimes": null,
-    "delay": null,
-  }
-}
--->
-
 <body style="padding: 0; margin: 0">
     <div id="map" style="height: 90vh;"></div>
     <div class="container">
@@ -74,17 +26,17 @@
               </tr>
             </thead>
             <tbody>
-                <template x-data x-for="stop in $store.sv.vehicle.stops">
+                <template x-data x-for="stop in $store.sv.stops">
                     <tr>
                       <th scope="row" x-text="stop.stop_sequence"></th>
                       <td x-text="stop.stop_name"></td>
                       <td x-text="stop.arrival_time"></td>
-                      <td x-text="$store.sv.vehicle.delay[stop.stop_sequence-1]"></td>
+                      <td x-data x-text="$store.sv.delay[stop.stop_sequence-1]"></td>
                     </tr>
                 </template>
             </tbody>
         </table>
-        <p x-text="$store.sv.vehicle.agencyName"></p>
+        <p x-text="$store.sv.agencyName"></p>
         <pre x-data x-text="JSON.stringify($store.sv, undefined, 2)"></pre>
     </div>
 

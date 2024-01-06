@@ -1,11 +1,13 @@
 use anyhow::Result;
 use std::io::Read;
+use std::time::Duration;
 
 use flate2::read::GzDecoder;
 use google_cloud_storage::http::objects::get::GetObjectRequest;
 use google_cloud_storage::http::objects::list::ListObjectsRequest;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::Sender;
+use tokio::time::sleep;
 
 use crate::Vehicle;
 use google_cloud_storage::client::{Client, ClientConfig};
@@ -57,23 +59,29 @@ impl TrainingDataClient {
     pub async fn run(&mut self, sender: Sender<Vehicle>) {
         let client = Client::new(ClientConfig::default().anonymous());
 
+        self.file_index = 30; // start at 30, because 0 is at night
+
+        let mut event_counter: u64 = 0;
         while self.file_index < self.files.len() {
             println!("Processing file {:?}/{:?}", self.file_index+1, self.files.len());
             let csv_file = get_file(&client, self.files[self.file_index].clone()).await;
             if let Ok(rows) = csv_file {
                 for record in rows {
-                    // Only send metros
-                    if record.route_type == Some(401) {
-                        // Send with backpressure!
-                        sender.send(Vehicle {
-                            id: record.id,
-                            lng: record.lng,
-                            lat: record.lat,
-                            timestamp: record.timestamp,
-                            trip_id: record.trip_id,
-                            metadata: None,
-                        }).await.expect("Internal channel broken.");
+                    // only send 1000 events per second
+                    event_counter+=1;
+                    if event_counter == 1000 {
+                        sleep(Duration::from_secs(1)).await;
+                        event_counter = 0;
                     }
+                    // Send with backpressure!
+                    sender.send(Vehicle {
+                        id: record.id,
+                        lng: record.lng,
+                        lat: record.lat,
+                        timestamp: record.timestamp,
+                        trip_id: record.trip_id,
+                        metadata: None,
+                    }).await.expect("Internal channel broken.");
                 }
                 self.file_index = self.file_index + 1;
             } else {

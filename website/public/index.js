@@ -2,11 +2,15 @@
 document.addEventListener('alpine:init', () => {
     Alpine.store('sv', {
         displayText: "no vehicle",
-        vehicle: {},
+        agencyName: "no agency name",
+        stops: [],
+        delay: [],
         
         update(vehicle) {
-           this.displayText = vehicle.displayText;
-           this.vehicle = vehicle;
+            this.displayText = vehicle.displayText;
+            this.agencyName = vehicle.agencyName;
+            this.stops = vehicle.stops;
+            this.delay = vehicle.delay;
         }
     })
 })
