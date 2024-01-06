@@ -1,6 +1,7 @@
 import redis
 import hopsworks
 import pandas as pd
+import uuid
 from io import StringIO
 
 
@@ -9,8 +10,8 @@ project = hopsworks.login(project="zeihers_mart")
 fs = project.get_feature_store()
 fg = fs.get_or_create_feature_group(
     name="metro",
-    version=2,
-    primary_key=[f"feature_{i:02d}" for i in range(0, 75)],
+    version=3,
+    primary_key=["uuid"],
     description="Stockholm Metro delay prediction dataset"
 )
 
@@ -40,5 +41,6 @@ for msg in sub.listen():
     # write to hopsworks if buffer is full
     if len(buffer_df) >= 10:
         buffer_df.columns = buffer_df.columns.map(lambda i: f"feature_{i:02d}")
+        buffer_df['uuid'] = [str(uuid.uuid4()) for _ in range(len(buffer_df.index))]
         fg.insert(buffer_df)
         buffer_df = None
