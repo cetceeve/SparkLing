@@ -25,7 +25,8 @@ After that, our continuous feature pipeline is now continuously extracting new t
 The below diagram shows transitmap's architecture, including the dataflow through the system.
 Components colored in green are completely new and were added as part of this course project.
 Components colored in yellow existed previously, but were changed in a major way for this course project.
-![./Transitmap Architecture Dataflow](./Transitmap Architecture Dataflow Colored.png)
+
+![Transitmap Architecture Dataflow](./architecture-dataflow.png)
 
 ## How to run locally
 Transitmap can run locally using docker-compose.
