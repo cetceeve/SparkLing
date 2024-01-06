@@ -9,6 +9,11 @@ This work included collecting a large dataset from the continuous stream of posi
 implementing a fully modular machine learning pipeline for the delay prediction, and integrating that with the existing architecture of transitmap.
 In the following we will describe our data, each component of the machine learning pipeline, and how everything fits into the overall architecture.
 
+## Prediction Problem
+The specific prediction problem that we are solving in this course project is to predict the delta between the scheduled arrival time
+and the real arrival time for all future stops for all running metros in Stockholm.
+So we are predicting future delays (and early arrivals) for metros that are currently on their way at any given time.
+
 ## Data
 We are working with the publically available public transport data available from Trafiklab for all of Sweden.
 This includes timetable data including metadata for all of Sweden, as well as a stream of realtime vehicle position updates for many transport agencies.
@@ -16,8 +21,8 @@ The timetable is in the static GTFS data format and is updates once per day.
 The realtime position updates are a data stream with new events every 3 seconds.
 On average this stream delivers over 4000 events per second and over 100 Million events per day.
 
-Our custom event processing engine combines information from these two datasources in realtime, to get a continuous stream of position updates with metadata.
-This combined stream serves as the basis for our prediction problem. We collected the whole stream for 3 weeks, totalling over 2.5 Billion events in total.
+Our custom event processing engine combines information from these two datasources in realtime to get a continuous stream of position updates with metadata.
+This combined stream serves as the basis for our problem. We collected the whole stream for 3 weeks, totalling over 2.5 Billion events in total.
 This dataset was the input for our batch feature pipeline.
 After that, our continuous feature pipeline is now continuously extracting new training samples from the data stream for future model iterations.
 
