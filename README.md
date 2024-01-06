@@ -15,16 +15,26 @@ and the real arrival time for all future stops for all running metros in Stockho
 So we are predicting future delays (and early arrivals) for metros that are currently on their way at any given time.
 
 ## Data
-We are working with the publically available public transport data available from Trafiklab for all of Sweden.
+We are working with the public transport data available from Trafiklab for all of Sweden.
 This includes timetable data including metadata for all of Sweden, as well as a stream of realtime vehicle position updates for many transport agencies.
 The timetable is in the static GTFS data format and is updates once per day.
 The realtime position updates are a data stream with new events every 3 seconds.
 On average this stream delivers over 4000 events per second and over 100 Million events per day.
 
-Our custom event processing engine combines information from these two datasources in realtime to get a continuous stream of position updates with metadata.
-This combined stream serves as the basis for our problem. We collected the whole stream for 3 weeks, totalling over 2.5 Billion events in total.
+Our custom event processing engine combines information from these two datasources in realtime to get a continuous stream of position updates joined with all relevant metadata.
+This combined stream serves as the basis for our problem. We collected the whole stream for 3 weeks, totalling over 2.5 Billion events.
 This dataset was the input for our batch feature pipeline.
 After that, our continuous feature pipeline is now continuously extracting new training samples from the data stream for future model iterations.
+
+## Prediction
+
+## LSTM Model
+
+Because we are working with sequence data one of our models was a Recurrent Neural Network for a Sequence to Vector prediction.
+We model our prediction problem like a language model, where the prediction task is to predict the next word.
+In our vocabulary we encode relevant metadata like route, direction, day-of-the-week, time-of-day as well as stops and the current delay in 1 minute intervals between -15 and 15.
+The sequences start with the metadata and continoue with each stop and delay interleaved.
+During inference we provide all the realtime information up to the first stop where we are missing data and let the model predict the delay for the rest of the sequence.
 
 ## Architecture
 We built a completely modular machine learning architecture for transitmap, following the best practices we learned in the course.
@@ -55,6 +65,17 @@ TRAFIKLAB_GTFS_STATIC_KEY=<static-data-api-key>
 Note that, while the API keys you have just set up are are perfectly fine for testing, they not enough to run SparkLing continuously.
 For this, the `Guld` API tier is required on the realtime API. This can also be requested from TrafikLab free of charge, but processing
 the request typically takes a couple days.
+
+### Hopsworks API Keys
+
+1. Login or create an account on [Hopsworks](https://www.hopsworks.ai)
+2. Follow the instructions to finish account creation
+3. Find your API key in the profile menu
+
+```
+HOPSWORKS_API_KEY=<hopsworks-api-key>
+```
+Note that the free tier should be enouph to support the feature pipeline for quite a long time.
 
 ### Running
 Once you have set up your API keys, you can simply run SparkLing with the following command.
