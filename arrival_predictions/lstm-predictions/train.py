@@ -37,17 +37,16 @@ test_loader = tud.DataLoader(dataset_test, batch_size=batch_size, num_workers=0)
 # load model
 model = MetroPredictionLSTM(
     vocab_size=dataset.vocab_size,
-    hidden_size=64,
+    hidden_size=128,
     embedding_size=64,
     num_layers=1,
-    dropout=0.1,
+    dropout=0.2,
     pad_idx=dataset.pad_idx,
     skp_idx=dataset.skp_idx,
-    token_to_text=dataset.token_to_text
 )
 """
 model = MetroPredictionLSTM.load_from_checkpoint(
-    "tb_logs/metro-delay-logger/version_21/checkpoints/epoch=66-step=871.ckpt"
+    "tb_logs/metro-delay-logger/version_21/checkpoints/epoch=42-step=1720.ckpt"
 )
 """
 
@@ -93,7 +92,6 @@ mr = project.get_model_registry()
 input_schema = Schema(dataset.data[0])
 output_schema = Schema(dataset.data[0])
 model_schema = ModelSchema(input_schema=input_schema, output_schema=output_schema)
-model_schema.to_dict()
 
 model_dir = "torch_tf_model"
 if os.path.isdir(model_dir) == False:

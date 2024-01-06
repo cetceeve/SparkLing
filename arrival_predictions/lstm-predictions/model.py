@@ -15,7 +15,7 @@ class MetroPredictionLSTM(pl.LightningModule):
         dropout: float,
         pad_idx: int,
         skp_idx: int,
-        token_to_text: dict[str: str]
+        # token_to_text: dict[str: str]
     ):
         super().__init__()
 
@@ -26,13 +26,13 @@ class MetroPredictionLSTM(pl.LightningModule):
         self.dropout = dropout
         self.pad_idx = pad_idx
         self.skp_idx = skp_idx
-        self.token_to_text = token_to_text
+        # self.token_to_text = token_to_text
 
         # Creates embedding layer with fixed weights of 1 where
         # for each token in the vocab one element of one row is 1 others are zero
-        self.one_hot = nn.Embedding.from_pretrained(
-            embeddings=torch.eye(self.vocab_size), freeze=True
-        )
+        # self.one_hot = nn.Embedding.from_pretrained(
+        #     embeddings=torch.eye(self.vocab_size), freeze=True
+        # )
 
         # Make actual embedding
         self.embedding = nn.Embedding(self.vocab_size, self.embedding_size);
@@ -48,7 +48,7 @@ class MetroPredictionLSTM(pl.LightningModule):
         # self.regression_layer = nn.Linear(hidden_size, 1)
 
         # -1 select last dimention in our case the vocab
-        self.softmax = nn.Softmax(dim=-1)
+        # self.softmax = nn.Softmax(dim=-1)
 
         self.loss = nn.CrossEntropyLoss(ignore_index=self.pad_idx)
 
@@ -110,7 +110,7 @@ class MetroPredictionLSTM(pl.LightningModule):
                 # token we need to predict
                 if idx == self.skp_idx:
                     # current state of generation as input
-                    input_tensor = torch.Tensor(generation).to(self.device).unsqueeze(0)
+                    input_tensor = torch.Tensor(generation).to(torch.int32).unsqueeze(0)
                     # take prediction accoding to softmax
                     linear_output = self.forward(input_tensor)[:, -1, :]
                     # classification is unnecessary as softmax would select highest value anyway
@@ -118,14 +118,13 @@ class MetroPredictionLSTM(pl.LightningModule):
                     # classification = self.softmax(linear_output)[:, -1, :]
 
                     # returns index of highest value in flattened output tensor
-                    pred_idx = torch.argmax(linear_output);
+                    pred_idx = torch.argmax(linear_output).item();
                     generation.append(pred_idx)
-            
-                # all other tokens are added to the generation
-                generation.append(idx)
+                else:
+                    # all other tokens are added to the generation
+                    generation.append(idx)
 
-            translation = [self.token_to_text[str(g)] for g in generation]
-            return (generation, translation)
+            return generation
 
                 
 
