@@ -5,6 +5,8 @@ class Vehicle {
         this.realLatLng = [data.lat, data.lng];
         this.animationStart = performance.now();
         this.delay = [];
+        this.color = this.recomputeDisplayColor();
+        this.displayText = this.recomputeDisplayText();
         this.updateData(data, false);
     }
 
