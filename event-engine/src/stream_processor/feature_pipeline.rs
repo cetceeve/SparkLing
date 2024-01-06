@@ -15,6 +15,7 @@ use super::ProcessingStep;
 /// 48-149: stop_name ['Kungsträdgården', 'T-Centralen', 'Rådhuset', 'Fridhemsplan', 'Stadshagen', 'Västra skogen', 'Huvudsta', 'Solna strand', 'Sundbybergs centrum', 'Duvbo', 'Rissne', 'Rinkeby', 'Tensta', 'Hjulsta', 'Solna centrum', 'Näckrosen', 'Hallonbergen', 'Kymlinge norrut', 'Kista', 'Husby', 'Akalla', 'Kymlinge söderut', 'Norsborg', 'Hallunda', 'Alby', 'Fittja', 'Masmo', 'Vårby gård', 'Vårberg', 'Skärholmen', 'Sätra', 'Bredäng', 'Mälarhöjden', 'Axelsberg', 'Örnsberg', 'Aspudden', 'Liljeholmen', 'Hornstull', 'Zinkensdamm', 'Mariatorget', 'Slussen', 'Gamla stan', 'Östermalmstorg', 'Karlaplan', 'Gärdet', 'Ropsten', 'Mörby centrum', 'Danderyds sjukhus', 'Bergshamra', 'Universitetet', 'Tekniska högskolan', 'Stadion', 'Fruängen', 'Västertorp', 'Hägerstensåsen', 'Telefonplan', 'Midsommarkransen', 'Skarpnäck', 'Bagarmossen', 'Kärrtorp', 'Björkhagen', 'Hammarbyhöjden', 'Skärmarbrink', 'Gullmarsplan', 'Skanstull', 'Medborgarplatsen', 'Hötorget', 'Rådmansgatan', 'Odenplan', 'S:t Eriksplan', 'Thorildsplan', 'Kristineberg', 'Alvik', 'Stora mossen', 'Abrahamsberg', 'Brommaplan', 'Åkeshov', 'Ängbyplan', 'Islandstorget', 'Blackeberg', 'Råcksta', 'Vällingby', 'Johannelund', 'Hässelby gård', 'Hässelby strand', 'Farsta strand', 'Farsta', 'Hökarängen', 'Gubbängen', 'Tallkrogen', 'Skogskyrkogården', 'Sandsborg', 'Blåsut', 'Hagsätra', 'Rågsved', 'Högdalen', 'Bandhagen', 'Stureby', 'Svedmyra', 'Sockenplan', 'Enskede gård', 'Globen']
 /// 150-156: weekday
 /// 157-180: hour_of_day
+/// 181: skip token, indicates for inference which values to predict
 pub struct Token(u64);
 
 /// A complete sequence, used for training of our model
@@ -123,7 +124,7 @@ impl ProcessingStep for InferenceFeatureExtractor {
                             sequence.0.push(tokenize_time_delta(0));
                         }
                     } else {
-                        sequence.0.push(Token(33)); // <pad> in places we want to predict
+                        sequence.0.push(Token(181)); // <skip> in places we want to predict
                     }
                 }
                 while sequence.0.len() < 75 {
