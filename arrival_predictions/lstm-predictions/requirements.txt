@@ -1,2 +1,3 @@
-lightning==2.1.3
-tensorboard==2.15.1
+lightning
+tensorboard
+hopsworks
