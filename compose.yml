@@ -48,23 +48,6 @@ services:
   #   container_name: feature-uploader
   #   image: jonathanarns/sparkling-feature-uploader
   #   build: ./feature-uploader
-  web:
-    container_name: web-app
-    image: fabianzeiher/sparkling-app
-    build: ./website
-    depends_on:
-      - event-engine
-      - sparkling-redis
-    ports:
-      - "80:8080"
-    networks:
-      - sparkling-bridge
-    restart: on-failure
-
-  # feature-uploader:
-  #   container_name: feature-uploader
-  #   image: jonathanarns/sparkling-feature-uploader
-  #   build: ./feature-uploader
   #   depends_on:
   #     - event-engine
   #     - sparkling-redis
