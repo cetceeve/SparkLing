@@ -71,7 +71,8 @@ def create_vocabulary():
     # 157-180: hour_of_day
     for hour in range(0,24):
         token_to_text[157 + hour] = "h" + str(hour)
-    
+    # <skp> token introduced for inference 
+    token_to_text[181] = "<skp>"
     # print(pretty_dict(token_to_meaning))
 
     # Reverse dictionary
