@@ -1,13 +1,12 @@
 // data store for reactive ui
 document.addEventListener('alpine:init', () => {
-    Alpine.store('overlay', false),
     Alpine.store('sv', {
         displayText: "no vehicle",
-        m: {},
+        vehicle: {},
         
         update(vehicle) {
            this.displayText = vehicle.displayText;
-           this.m = vehicle.metadata;
+           this.vehicle = vehicle;
         }
     })
 })
@@ -173,6 +172,7 @@ function initiateLeaflet() {
         center:  [59.34563446044922, 18.071327209472656],
         zoom: 16,
         renderer: L.canvas(),
+        zoomControl: false,
     });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -240,11 +240,8 @@ map.on("click", function(e) {
         }
     });
     selectedVehicle = closestVehicle;
-    if (selectedVehicle) {
-        if (selectedVehicle.onTrip) {
-            Alpine.store("overlay", true);
-            Alpine.store("sv").update(selectedVehicle);
-        }
+    if (selectedVehicle && selectedVehicle.onTrip) {
+        Alpine.store("sv").update(selectedVehicle);
     }
 });
 map.locate({ watch: true, enableHighAccuracy: true });

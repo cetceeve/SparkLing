@@ -15,16 +15,13 @@
 <!-- 
 {
   "displayText": "50 mot Stora Lappkärrsberget",
-  "m": {
-    "trip_id": "14010000619396557",
-    "route_type": 700,
-    "agency_name": "AB Storstockholms Lokaltrafik",
-    "route_short_name": "50",
-    "route_long_name": null,
-    "trip_headsign": "Stora Lappkärrsberget",
-    "shape_id": 1014010000536798000,
-    "route_id": "9011001005000000",
-    "direction_id": 1,
+  "vehicle": {
+    "tripId": "14010000619396557",
+    "routeType": 700,
+    "agencyName": "AB Storstockholms Lokaltrafik",
+    "routeShortName": "50",
+    "routeLongName": null,
+    "tripHeadsign": "Stora Lappkärrsberget",
     "stops": [
       {
         "stop_sequence": 1,
@@ -57,14 +54,15 @@
         "shape_dist_traveled": 851.84
       },
     ],
-    "real_stop_times": null
+    "realStopTimes": null,
+    "delay": null,
   }
 }
 -->
 
 <body style="padding: 0; margin: 0">
     <div id="map" style="height: 90vh;"></div>
-    <div x-data x-show="$store.overlay" class="container">
+    <div class="container">
         <h3 x-data x-text="$store.sv.displayText"></h3>
         <table>
             <thead>
@@ -72,23 +70,22 @@
                 <th scope="col">#</th>
                 <th scope="col">Stop</th>
                 <th scope="col">Scheduled</th>
-                <th scope="col">Prediction</th>
+                <th scope="col">Delay</th>
               </tr>
             </thead>
             <tbody>
-                <template x-data x-for="stop in $store.sv.m.stops">
+                <template x-data x-for="stop in $store.sv.vehicle.stops">
                     <tr>
                       <th scope="row" x-text="stop.stop_sequence"></th>
                       <td x-text="stop.stop_name"></td>
                       <td x-text="stop.arrival_time"></td>
-                      <td>todo</td>
+                      <td x-text="$store.sv.vehicle.delay[stop.stop_sequence-1]"></td>
                     </tr>
                 </template>
             </tbody>
         </table>
-        <p x-text="$store.sv.m.agency_name"></p>
+        <p x-text="$store.sv.vehicle.agencyName"></p>
         <pre x-data x-text="JSON.stringify($store.sv, undefined, 2)"></pre>
-        <button x-on:click="$store.overlay = false">Close Vehicle</button> 
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -97,7 +94,6 @@
     <script type="text/javascript" src="https://unpkg.com/leaflet-customlayer@2.1.0/dist/Leaflet.CustomLayer.js"></script>
     <script type="text/javascript" src="./util.js"></script>
     <script type="text/javascript" src="./vehicle.js"></script>
-    <script type="text/javascript" src="./timetable.js"></script>
     <script type="text/javascript" src="./index.js"></script>
 </body>
 
