@@ -49,7 +49,6 @@ async fn main() {
     let (output_sender, mut output_receiver) = mpsc::channel::<Vehicle>(5000);
     let mut processor = stream_processor::StreamProcessor::default().await;
 
-    // Uncomment here to run training
     // let mut training_client = training_data_client::TrainingDataClient::default().await;
     tokio::task::spawn(async move {
         processor.run(input_receiver, output_sender).await
