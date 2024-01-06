@@ -50,16 +50,16 @@ async fn main() {
     let mut processor = stream_processor::StreamProcessor::default().await;
 
     // Uncomment here to run training
-    let mut training_client = training_data_client::TrainingDataClient::default().await;
+    // let mut training_client = training_data_client::TrainingDataClient::default().await;
     tokio::task::spawn(async move {
         processor.run(input_receiver, output_sender).await
     });
-    // rt_gtfs_client::start_vehicle_position_clients(input_sender);
+    rt_gtfs_client::start_vehicle_position_clients(input_sender);
 
     // Uncomment here to run training
-    tokio::task::spawn(async move {
-        training_client.run(input_sender).await;
-    });
+    // tokio::task::spawn(async move {
+    //     training_client.run(input_sender).await;
+    // });
 
     // start redis client
     let redis_client = redis::Client::open("redis://sparkling-redis/").unwrap();

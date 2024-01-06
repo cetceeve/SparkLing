@@ -38,9 +38,12 @@ test_loader = tud.DataLoader(dataset_test, batch_size=batch_size, num_workers=0)
 model = MetroPredictionLSTM(
     vocab_size=dataset.vocab_size,
     hidden_size=64,
+    embedding_size=64,
     num_layers=1,
     dropout=0.1,
-    pad_index=dataset.pad_idx,
+    pad_idx=dataset.pad_idx,
+    skp_idx=dataset.skp_idx,
+    token_to_text=dataset.token_to_text
 )
 """
 model = MetroPredictionLSTM.load_from_checkpoint(
