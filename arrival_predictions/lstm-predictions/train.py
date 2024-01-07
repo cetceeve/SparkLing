@@ -28,7 +28,11 @@ print("Training samples:", len(dataset_train))
 print("Validation samples:", len(dataset_val))
 print("Test samples:", len(dataset_test))
 
-batch_size = 64
+batch_size = 32
+hidden_size = 64
+embedding_size = 64
+num_layers = 1
+dropout = 0.1
 # think about shuffling or not
 train_loader = tud.DataLoader(dataset_train, batch_size=batch_size, num_workers=0)
 val_loader = tud.DataLoader(dataset_val, batch_size=batch_size, num_workers=0)
@@ -37,10 +41,10 @@ test_loader = tud.DataLoader(dataset_test, batch_size=batch_size, num_workers=0)
 # load model
 model = MetroPredictionLSTM(
     vocab_size=dataset.vocab_size,
-    hidden_size=128,
-    embedding_size=64,
-    num_layers=1,
-    dropout=0.2,
+    hidden_size=hidden_size,
+    embedding_size=embedding_size,
+    num_layers=num_layers,
+    dropout=dropout,
     pad_idx=dataset.pad_idx,
     skp_idx=dataset.skp_idx,
 )
@@ -79,6 +83,8 @@ trainer = pl.Trainer(
     ],
 )
 
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 trainer.fit(
     model,
     train_dataloaders=train_loader,
@@ -105,7 +111,15 @@ model = mr.torch.create_model(
     name="metro_delay_model",
     description="PyTorch Lighting LSTM Model predicting the delay at the next stop.",
     model_schema=model_schema,
-    metrics=metrics[0]
+    metrics={
+        "test_loss": metrics[0]["test_loss"],
+        "trainable_params": trainable_params,
+        "batch_size": batch_size,
+        "hidden_size": hidden_size,
+        "embedding_size": embedding_size,
+        "num_layers": num_layers,
+        "dropout": dropout,
+    }
 )
 
 model.save(model_dir)
