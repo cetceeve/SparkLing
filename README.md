@@ -2,8 +2,10 @@
 
 [transitmap.io](https://transitmap.io) is an interactive realtime visualisation of all public transport in Sweden (or those parts of it that have realtime geolocations, anyway).
 
-In the scope of the final project for the scalable machine learning course at KTH, we added timetables for all vehicles to the map,
-and implemented a realtime stop arrival detection and future delay prediction for all metro vehicles.
+[id2223.transitmap.io](https://id2223.transitmap.io) is a new version of Transitmap that we modified for the final course project in scalable machine learning at KTH.
+
+In the scope of the final project for the scalable machine learning course, we added timetables for all vehicles to the map,
+and implemented realtime stop arrival detection and future delay prediction for all metro vehicles.
 
 This work included collecting a large dataset from the continuous stream of position updates and metadata,
 implementing a fully modular machine learning pipeline for the delay prediction, and integrating that with the existing architecture of transitmap.
@@ -84,7 +86,7 @@ Transitmap can run locally using docker-compose.
 This requires a small amount of setup, as follows.
 
 ### TrafikLab API Keys
-To run SparkLink yourself, you need to provide your own API keys from [TrafikLab](https://www.trafiklab.se/).
+To run Transitmap yourself, you need to provide your own API keys from [TrafikLab](https://www.trafiklab.se/).
 This is completely free of charge. Follow these steps to set it up:
 
 1. Login or create an account on [TrafikLab](https://www.trafiklab.se/).
@@ -96,7 +98,7 @@ This is completely free of charge. Follow these steps to set it up:
 TRAFIKLAB_GTFS_RT_KEY=<realtime-api-key>
 TRAFIKLAB_GTFS_STATIC_KEY=<static-data-api-key>
 ```
-Note that, while the API keys you have just set up are are perfectly fine for testing, they not enough to run SparkLing continuously.
+Note that, while the API keys you have just set up are are perfectly fine for testing, they not enough to run Transitmap continuously.
 For this, the `Guld` API tier is required on the realtime API. This can also be requested from TrafikLab free of charge, but processing
 the request typically takes a couple days.
 
@@ -112,7 +114,7 @@ HOPSWORKS_API_KEY=<hopsworks-api-key>
 Note that the free tier should be enouph to support the feature pipeline for quite a long time.
 
 ### Running
-Once you have set up your API keys, you can simply run SparkLing with the following command.
+Once you have set up your API keys, you can simply run Transitmap with the following command.
 ```
 docker-compose up --build
 ```
