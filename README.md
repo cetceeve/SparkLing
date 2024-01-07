@@ -47,9 +47,9 @@ Previously this pipeline only attached the pre-aggregated metadata like the rout
 Now, the pipeline uses the raw vehicle coordinates, as well as the trip's timetable, to detect when a stop is reached.
 The feature pipeline collects this information each trip in memory and transforms it into a sequence of tokens for training or inference.
 
-| #Samples  | #Val  | #Test  | #Tokens |
-| --------- | ----- | ------ | ------- |
-| 2507      | 537   | 537    | 125k    |
+| Training Samples  | Validation Samples  | Test Samples  | Training Tokens |
+| ----------------- | ------------------- | ------------- | --------------- |
+| 2507              | 537                 | 537           | 125k            |
 
 ## LSTM Model
 
@@ -61,13 +61,13 @@ During inference we provide all the realtime information up to the current stop 
 
 We trained a number of models with different dimensions, the below table shows the notable examples that performed best at each model size.
 
-| Parameters  | Tokens / Param  | #Layers | Hidden Size | Embedding Size | Test loss | 
-| ----------- | --------------- | ------- | ----------- | -------------- | --------- | 
-| 134k        | 0.93            | 1       | 128         | 64             | 0.251     | 
-| 90k         | 1.39            | 2       | 64          | 64             | 0.246     | 
-| 56k         | 2.23            | 1       | 64          | 64             | 0.241     | 
-| 30k         | 4.17            | 1       | 32          | 64             | 0.246     | 
-| 20k         | 6.25            | 1       | 32          | 32             | 0.263     | 
+| Parameters  | Tokens / Param  | LSTM Layers | Hidden Size | Embedding Size | Test loss | 
+| ----------- | --------------- | ----------- | ----------- | -------------- | --------- | 
+| 134k        | 0.93            | 1           | 128         | 64             | 0.251     | 
+| 90k         | 1.39            | 2           | 64          | 64             | 0.246     | 
+| 56k         | 2.23            | 1           | 64          | 64             | 0.241     | 
+| 30k         | 4.17            | 1           | 32          | 64             | 0.246     | 
+| 20k         | 6.25            | 1           | 32          | 32             | 0.263     | 
 
 We can see in the above table that the model size plays a central role in model performance.
 We find the `tokens / parameter` metric especially interesting to gather an intuition on how much training data is required for this specific model and prediction problem.
