@@ -88,7 +88,7 @@ async fn run_client(url: String, interval: Duration, sender: Sender<Vehicle>) {
                             }
                         }
                     } else {
-                        println!("Protobuf Decode Error: Bytes length {}", bytes.len());
+                        println!("Protobuf Decode Error: Bytes length {}\non url {}", bytes.len(), url);
                         if let Ok(msg) = serde_json::from_slice::<serde_json::Value>(&bytes) {
                             println!("{:?}", msg);
                         }
