@@ -2,8 +2,10 @@
 
 [transitmap.io](https://transitmap.io) is an interactive realtime visualisation of all public transport in Sweden (or those parts of it that have realtime geolocations, anyway).
 
-In the scope of the final project for the scalable machine learning course at KTH, we added timetables for all vehicles to the map,
-and implemented a realtime stop arrival detection and future delay prediction for all metro vehicles.
+[id2223.transitmap.io](https://id2223.transitmap.io) is a new version of Transitmap that we modified for the final course project in scalable machine learning at KTH.
+
+In the scope of the final project for the scalable machine learning course, we added timetables for all vehicles to the map,
+and implemented realtime stop arrival detection and future delay prediction for all metro vehicles.
 
 This work included collecting a large dataset from the continuous stream of position updates and metadata,
 implementing a fully modular machine learning pipeline for the delay prediction, and integrating that with the existing architecture of transitmap.
@@ -35,12 +37,21 @@ Components colored in yellow existed previously, but were changed in a major way
 
 ![Transitmap Architecture Dataflow](./readme-images/architecture-dataflow.png)
 
-## Prediction
+## Feature Engineering
 
 In order to be able to train a deel learning model on our notebooks, we decided to scale down the prediction problem.
 For this iteration the predictions are limited to metros only.
 From our data we extracted 3561 data samples.
 Essentially, all public transport traffic from the 04.12.2023 to the 25.12.23 was simulated by pushing the collected events through the whole system in accelerated time, to generate training features from the previously collected data.
+
+The entire feature pipeline is implemented in Rust, within Transitmap's larger event processing pipeline.
+Previously this pipeline only attached the pre-aggregated metadata like the route name and trip headsign to each event.
+Now, the pipeline uses the raw vehicle coordinates, as well as the trip's timetable, to detect when a stop is reached.
+The feature pipeline collects this information each trip in memory and transforms it into a sequence of tokens for training or inference.
+
+| Training Samples  | Validation Samples  | Test Samples  | Training Tokens |
+| ----------------- | ------------------- | ------------- | --------------- |
+| 2507              | 537                 | 537           | 125k            |
 
 ## LSTM Model
 
@@ -50,9 +61,23 @@ In our vocabulary we encode relevant metadata like route, direction, day-of-the-
 The sequences start with the metadata for the specific trip and continoue with each stop and delay interleaved.
 During inference we provide all the realtime information up to the current stop in the trip and let the model predict the delay for the rest of the sequence.
 
-| Parameters  | #Samples  | #Val  | #Test  | Test loss  |
-| ----------- | --------- | ----- | ------ | ---------- |
-| 134k        | 2507      | 537   | 537    | 0.251      |
+We trained a number of models with different dimensions, the below table shows the notable examples that performed best at each model size.
+
+| Parameters  | Tokens / Param  | LSTM Layers | Hidden Size | Embedding Size | Test loss | 
+| ----------- | --------------- | ----------- | ----------- | -------------- | --------- | 
+| 134k        | 0.93            | 1           | 128         | 64             | 0.251     | 
+| 90k         | 1.39            | 2           | 64          | 64             | 0.246     | 
+| 56k         | 2.23            | 1           | 64          | 64             | 0.241     | 
+| 30k         | 4.17            | 1           | 32          | 64             | 0.246     | 
+| 20k         | 6.25            | 1           | 32          | 32             | 0.263     | 
+
+We can see in the above table that the model size plays a central role in model performance.
+We find the `tokens / parameter` metric especially interesting to gather an intuition on how much training data is required for this specific model and prediction problem.
+We found the best model performance at ~2.2 tokens per parameter, which is interesting for two reasons:
+- It is much lower than the roughly 10 tokens / parameter that is typical in LLMs. We think this is because our sequences are much more consistently structured than natural language.
+- Because of the structure of our sequences, we end up with roughly 1 delay token / parameter, which seems to make intuitive sense to us in this delay prediction problem.
+
+The following diagram shows the layers and dimensions of our best model.
 
 ![LSTM Model Architecture](./readme-images/lstm-model.png)
 
@@ -61,7 +86,7 @@ Transitmap can run locally using docker-compose.
 This requires a small amount of setup, as follows.
 
 ### TrafikLab API Keys
-To run SparkLink yourself, you need to provide your own API keys from [TrafikLab](https://www.trafiklab.se/).
+To run Transitmap yourself, you need to provide your own API keys from [TrafikLab](https://www.trafiklab.se/).
 This is completely free of charge. Follow these steps to set it up:
 
 1. Login or create an account on [TrafikLab](https://www.trafiklab.se/).
@@ -73,7 +98,7 @@ This is completely free of charge. Follow these steps to set it up:
 TRAFIKLAB_GTFS_RT_KEY=<realtime-api-key>
 TRAFIKLAB_GTFS_STATIC_KEY=<static-data-api-key>
 ```
-Note that, while the API keys you have just set up are are perfectly fine for testing, they not enough to run SparkLing continuously.
+Note that, while the API keys you have just set up are are perfectly fine for testing, they not enough to run Transitmap continuously.
 For this, the `Guld` API tier is required on the realtime API. This can also be requested from TrafikLab free of charge, but processing
 the request typically takes a couple days.
 
@@ -89,7 +114,7 @@ HOPSWORKS_API_KEY=<hopsworks-api-key>
 Note that the free tier should be enouph to support the feature pipeline for quite a long time.
 
 ### Running
-Once you have set up your API keys, you can simply run SparkLing with the following command.
+Once you have set up your API keys, you can simply run Transitmap with the following command.
 ```
 docker-compose up --build
 ```
