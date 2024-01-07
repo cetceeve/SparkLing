@@ -9,7 +9,7 @@ import json
 # connect to feature store
 project = hopsworks.login(project="zeihers_mart")
 mr = project.get_model_registry()
-model = mr.get_model("metro_delay_model", version=6)
+model = mr.get_model("metro_delay_model", version=15)
 model_dir = model.download()
 model = joblib.load(model_dir + "/metro_delay_lstm.pkl")
 
