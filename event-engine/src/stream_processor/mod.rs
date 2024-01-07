@@ -5,7 +5,6 @@ use redis::AsyncCommands;
 mod metadata_join;
 mod stop_detector;
 mod feature_pipeline;
-mod inference_pipeline;
 
 use self::feature_pipeline::{TrainingFeatureExtractor, InferenceFeatureExtractor};
 use self::metadata_join::MetadataJoiner;

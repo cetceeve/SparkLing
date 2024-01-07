@@ -2,15 +2,16 @@
 document.addEventListener('alpine:init', () => {
     Alpine.store('sv', {
         displayText: "no vehicle",
-        agencyName: "no agency name",
-        stops: [],
+        m: {},
         delay: [],
+        firstPredictedSequence: 1000,
         
         update(vehicle) {
+            // console.log(vehicle);
             this.displayText = vehicle.displayText;
-            this.agencyName = vehicle.agencyName;
-            this.stops = vehicle.stops;
-            this.delay = vehicle.delay;
+            this.m = vehicle.metadata ? vehicle.metadata : {};
+            this.delay = vehicle.delay ? vehicle.delay : [];
+            this.firstPredictedSequence = vehicle.firstPredictedSequence ? vehicle.firstPredictedSequence : 1000;
         }
     })
 })
@@ -244,8 +245,10 @@ map.on("click", function(e) {
         }
     });
     selectedVehicle = closestVehicle;
-    if (selectedVehicle && selectedVehicle.onTrip) {
-        Alpine.store("sv").update(selectedVehicle);
+    if (selectedVehicle) {
+        if (selectedVehicle.onTrip) {
+            Alpine.store("sv").update(selectedVehicle);
+        }
     }
 });
 map.locate({ watch: true, enableHighAccuracy: true });
@@ -278,10 +281,9 @@ evtSource.onmessage = (event) => {
             vehiclesOnScreen.delete(vehicle.id);
         }
         // Trigger reactive update.
-        // This might not be necessary depending how alpine stores are implemented
-        // if (vehicle.id === selectedVehicle.id) {
-        //     Alpine.store("sv").update(vehicle);
-        // }
+        if (vehicle.id === selectedVehicle.id) {
+            Alpine.store("sv").update(vehicle);
+        }
     } else {
         let vehicle = new Vehicle(data);
         vehicleHM.set(vehicle.id, vehicle);

@@ -23,7 +23,7 @@ pub struct Token(u64);
 ///
 /// The max trip length in the schedule is 35 stops,
 /// so the max sequence length will be 4 + 35*2 + 1 = 75
-pub struct TrainingSequence(Vec<Token>);
+pub struct Sequence(Vec<Token>);
 
 /// Takes input in seconds
 pub fn tokenize_time_delta(delta: i64) -> Token {
@@ -80,7 +80,7 @@ impl ProcessingStep for InferenceFeatureExtractor {
                 }
                 let old_highest_idx = self.highest_reached_stop_idx.get(&vehicle.id);
                 if Some(&new_highest_idx) == old_highest_idx {
-                    return (true, None) // we already predicted here, need to reach next stop first
+                    return (true, Some(("lstm-inference-features".to_string(), vehicle.id.bytes().collect()))) // we already predicted here, just prompt inference to re-send prediction
                 } else { // otherwise, we update the highest index we predicted at and do a prediction
                     self.highest_reached_stop_idx.insert(vehicle.id.clone(), new_highest_idx);
                 }
@@ -105,7 +105,7 @@ impl ProcessingStep for InferenceFeatureExtractor {
                 // construct sequence
                 let route_token = tokenize_route(vehicle_metadata.route_id.as_ref().unwrap(), vehicle_metadata.direction_id.unwrap());
                 let (day_token, hour_token) = tokenize_time(scheduled_times[0]);
-                let mut sequence = TrainingSequence(vec![Token(31), route_token, day_token, hour_token]);
+                let mut sequence = Sequence(vec![Token(31), route_token, day_token, hour_token]);
                 sequence.0.push(tokenize_stop_name(&stops[0].stop_name));
                 sequence.0.push(tokenize_time_delta(0)); // 0m time_delta
 
@@ -192,7 +192,7 @@ impl ProcessingStep for TrainingFeatureExtractor {
                 // construct sequence
                 let route_token = tokenize_route(vehicle_metadata.route_id.as_ref().unwrap(), vehicle_metadata.direction_id.unwrap());
                 let (day_token, hour_token) = tokenize_time(scheduled_times[0]);
-                let mut sequence = TrainingSequence(vec![Token(31), route_token, day_token, hour_token]);
+                let mut sequence = Sequence(vec![Token(31), route_token, day_token, hour_token]);
                 sequence.0.push(tokenize_stop_name(&stops[0].stop_name));
                 sequence.0.push(tokenize_time_delta(0)); // 0m time_delta
 
