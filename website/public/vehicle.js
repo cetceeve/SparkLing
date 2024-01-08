@@ -84,6 +84,7 @@ class Vehicle {
             return
         }
         this.onTrip = data.trip_id ? true : false;
+        this.metadata = data.metadata;
         this.displayText = dataToDisplayText(data);
         this.color = dataToColor(data);
         let timestamp = performance.now();
