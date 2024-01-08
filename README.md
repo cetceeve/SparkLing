@@ -1,14 +1,13 @@
 # Transitmap
 
+For the final project in scalable machine learning (id2223) at KTH, we added live delay predictions to an existing public transport information system. Our prediction system gets only a stream of realtime vehicle positions and a scheduled timetable. It extracts from that the true arrival times at past stops and predicts the delay for all future stops in the trip.
+
 [transitmap.io](https://transitmap.io) is an interactive realtime visualisation of all public transport in Sweden (or those parts of it that have realtime geolocations, anyway).
 
-[id2223.transitmap.io](https://id2223.transitmap.io) is a new version of Transitmap that we modified for the final course project in scalable machine learning at KTH.
-
-In the scope of the final project for the scalable machine learning course, we added timetables for all vehicles to the map,
-and implemented realtime stop arrival detection and future delay prediction for all metro vehicles.
+[id2223.transitmap.io](https://id2223.transitmap.io) is a new version of Transitmap that we heavily modified and extended for the final course project in scalable machine learning at KTH.
 
 This work included collecting a large dataset from the continuous stream of position updates and metadata,
-implementing a fully modular machine learning pipeline for the delay prediction, and integrating that with the existing architecture of transitmap.
+implementing a fully modular machine learning pipeline for the delay prediction, and integrating that with the existing architecture of Transitmap.
 In the following we will describe our data, each component of the machine learning pipeline, and how everything fits into the overall architecture.
 
 ## Prediction Problem
