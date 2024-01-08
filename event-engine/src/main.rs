@@ -45,8 +45,8 @@ pub struct Stop {
 
 #[tokio::main]
 async fn main() {
-    let (input_sender, input_receiver) = mpsc::channel::<Vehicle>(5000);
-    let (output_sender, mut output_receiver) = mpsc::channel::<Vehicle>(5000);
+    let (input_sender, input_receiver) = mpsc::unbounded_channel::<Vehicle>();
+    let (output_sender, mut output_receiver) = mpsc::unbounded_channel::<Vehicle>();
     let mut processor = stream_processor::StreamProcessor::default().await;
 
     // let mut training_client = training_data_client::TrainingDataClient::default().await;

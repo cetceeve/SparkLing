@@ -1,5 +1,5 @@
 use crate::Vehicle;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use redis::AsyncCommands;
 
 mod metadata_join;
@@ -52,18 +52,17 @@ impl StreamProcessor {
 
     pub async fn run(
         &mut self,
-        mut receiver: Receiver<Vehicle>,
-        sender: Sender<Vehicle>,
+        mut receiver: UnboundedReceiver<Vehicle>,
+        sender: UnboundedSender<Vehicle>,
     ) {
         let redis_client = redis::Client::open("redis://sparkling-redis/").unwrap();
         let mut redis_conn = redis_client.get_tokio_connection().await.unwrap();
         'EVENT_LOOP: loop {
             let mut vehicle = receiver.recv().await.expect("broken internal channel");
-
             // filter old events
-            if vehicle.timestamp < self.low_watermark {
-                continue
-            }
+            // if vehicle.timestamp < self.low_watermark {
+            //     continue
+            // }
             // update low_watermark
             self.low_watermark = self.low_watermark.max(vehicle.timestamp - self.processing_time_widow);
 
@@ -78,7 +77,7 @@ impl StreamProcessor {
                 }
             }
 
-            sender.send(vehicle).await.expect("broken internal channel");
+            sender.send(vehicle).expect("broken internal channel");
         }
     }
 }

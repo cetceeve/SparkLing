@@ -39,6 +39,7 @@ app.get('/realtime', async (req, res) => {
   res.flushHeaders(); // flush the headers to establish SSE with client
 
   let onMessage = (message) => {
+    console.log(message)
     res.write('data: '+ message.toString() + '\n\n');
   }
   subscriberService.subscribe(onMessage);

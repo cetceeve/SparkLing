@@ -281,7 +281,7 @@ evtSource.onmessage = (event) => {
             vehiclesOnScreen.delete(vehicle.id);
         }
         // Trigger reactive update.
-        if (vehicle.id === selectedVehicle.id) {
+        if (vehicle.id === selectedVehicle?.id) {
             Alpine.store("sv").update(vehicle);
         }
     } else {
