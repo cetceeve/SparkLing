@@ -12,40 +12,47 @@
 </head>
 
 <body style="padding: 0; margin: 0">
-    <div id="map" style="height: 90vh;"></div>
+    <div id="map" style="height: 85vh;"></div>
     <div x-data class="container">
         <div>
             <div style="display: flex;flex-direction: row;justify-content: space-between;margin-top: 0.5em;">
-                <h3 x-data="" x-text="$store.sv.displayText" style="white-space: nowrap;">no vehicle</h3>
-                <a x-on:click="window.scrollTo(0,500)">more info</a>
+                <h3 x-data="" x-text="$store.sv.displayText">no vehicle</h3>
+                <div onclick="scrollToTimetable()" style="cursor: pointer;"><a id="ttbttn" class="secondary" role="button">Timetable</a></div>
             </div>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Stop</th>
-                    <th scope="col">Scheduled</th>
-                    <th scope="col">Delay</th>
-                </tr>
-            </thead>
-            <tbody>
-                <template x-data x-for="stop in $store.sv.m.stops">
+        <figure>
+            <table id="timetable">
+                <thead>
                     <tr>
-                        <th scope="row" x-text="stop.stop_sequence"></th>
-                        <td x-text="stop.stop_name"></td>
-                        <td x-text="stop.arrival_time"></td>
-                        <td x-text="$store.sv.delay[stop.stop_sequence-1]"
-                            x-bind:style="stop.stop_sequence >= $store.sv.firstPredictedSequence ? 'color: red' : 'color: blue'">
-                        </td>
+                        <th scope="col">#</th>
+                        <th scope="col">Stop</th>
+                        <th scope="col">Scheduled</th>
+                        <th scope="col">Delay</th>
                     </tr>
-                </template>
-            </tbody>
-        </table>
-        <p x-text="$store.sv.m.agency_name"></p>
+                </thead>
+                <tbody>
+                    <template x-data x-for="stop in $store.sv.m.stops">
+                        <tr>
+                            <th scope="row" x-text="stop.stop_sequence"></th>
+                            <td x-text="stop.stop_name"></td>
+                            <td x-text="stop.arrival_time"></td>
+                            <td x-text="$store.sv.delay[stop.stop_sequence-1]"
+                                x-bind:style="stop.stop_sequence >= $store.sv.firstPredictedSequence && 'color: red'">
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </figure>
+        <p x-text="$store.sv.m.agency_name">Click on a vehicle.</p>
         <!-- <pre x-data x-text="JSON.stringify($store.sv, undefined, 2)"></pre> -->
     </div>
 
+    <script>
+        function scrollToTimetable() {
+            document.getElementById("timetable").scrollIntoView({ behavior: "smooth", inline:"center"});
+        };
+    </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script type="text/javascript"

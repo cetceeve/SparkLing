@@ -1,7 +1,7 @@
 // data store for reactive ui
 document.addEventListener('alpine:init', () => {
     Alpine.store('sv', {
-        displayText: "no vehicle",
+        displayText: "transitmap.io",
         m: {},
         delay: [],
         firstPredictedSequence: 1000,
