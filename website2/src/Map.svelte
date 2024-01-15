@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import "ol/ol.css";
   import Map from 'ol/Map.js';
   import OSM from 'ol/source/OSM.js';
   import TileLayer from 'ol/layer/Tile.js';
@@ -9,7 +10,7 @@
 
   onMount(() => {
     map = new Map({
-      target: 'map',
+      target: 'map-container',
       layers: [
         new TileLayer({
           source: new OSM(),
@@ -23,12 +24,11 @@
   });
 </script>
 
-<div id="map"></div>
+<div id="map-container"></div>
 
 <style>
-  @import "node_modules/ol/ol.css";
 
-  #map {
+  #map-container {
     position: absolute;
     top: 0;
     bottom: 0;
