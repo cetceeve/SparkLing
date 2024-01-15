@@ -40,3 +40,18 @@ function metersToPixels(meters, map) {
     let metersPerPixel = 40075016.686 * Math.abs(Math.cos(map.getCenter().lat * Math.PI/180)) / Math.pow(2, map.getZoom()+8);
     return Math.ceil(meters / metersPerPixel);
 }
+
+function refreshVehiclesOnScreen() {
+    let mapBounds = map.getBounds();
+    let eastBound = mapBounds.getEast();
+    let westBound = mapBounds.getWest();
+    let northBound = mapBounds.getNorth();
+    let southBound = mapBounds.getSouth();
+    let newVehiclesOnScreen = new Map();
+    vehicleHM.forEach(function(val, key, _) {
+        if (checkBounds(val, eastBound, westBound, northBound, southBound)) {
+            newVehiclesOnScreen.set(key, val);
+        }
+    });
+    vehiclesOnScreen = newVehiclesOnScreen;
+}

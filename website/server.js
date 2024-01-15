@@ -58,7 +58,6 @@ function sleep(ms) {
 
 // wait a little until startup
 async function startup() {
-  await sleep(5000);
   let redisClient = await redis.createClient({
     url: "redis://sparkling-redis/"
   }).connect();
