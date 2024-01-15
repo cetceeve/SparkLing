@@ -10,59 +10,39 @@
   import Feature from 'ol/Feature.js';
   import Point from 'ol/geom/Point.js';
   import TileLayer from 'ol/layer/Tile.js';
-  import WebGLPointsLayer from 'ol/layer/WebGLPoints.js';
   import VectorLayer from 'ol/layer/Vector';
+  import { getVectorContext } from 'ol/render.js';
+  import { Circle, Fill, Icon, Stroke, Style } from 'ol/style.js';
 
   export let map = undefined;
   // export let selectedFeature = null;
 
+  let frameCounter = 0;
+  let renderVehicles = function(event) {
+    let ctx = getVectorContext(event)
+    ctx.setStyle(new Style({
+      image: new Circle({
+        radius: 7,
+        fill: new Fill({color: 'black'}),
+        stroke: new Stroke({
+          color: 'white',
+          width: 2,
+        }),
+      }),
+    }));
+    ctx.drawGeometry(new Point(fromLonLat([18.071327209472656+frameCounter*0.00001, 59.34563446044922])));
+
+    frameCounter++;
+    map.render();
+  }
+
   onMount(() => {
     // create the vector source that contains the vehicles to render
-    let vectorSource = new VectorSource({
-      features: [
-        new Feature({
-          type: 'geoMarker',
-          geometry: new Point(fromLonLat([18.071327209472656, 59.34563446044922])),
-        }),
-        new Feature({
-          type: 'geoMarker',
-          geometry: new Point(0,0),
-        }),
-      ],
-    });
+    let vectorSource = new VectorSource();
 
-    // create the vehicle rendering layer
-    let vehicleLayer = new WebGLPointsLayer({
+    let vehicleLayer = new VectorLayer({
       source: vectorSource,
-      // style: {
-
-      //   symbol: {
-      //     symbolType: 'circle',
-      //     size: 15,
-      //     color: 'rgb(255, 0, 0)',
-      //     opacity: 0.7,
-      //   },
-      // },
-      style: {
-        'circle-radius': [
-          'interpolate',
-          ['exponential', 2],
-          ['zoom'],
-          5, // min zoom level
-          2, // min size
-          18, // max zoom level
-          16, // max size
-        ],
-        'circle-fill-color': 'rgb(255, 0, 0)',
-        // 'circle-displacement': [0, 0],
-        'circle-opacity': 1.0,
-      },
-      disableHitDetection: false,
     });
-
-    // let vehicleLayer = new VectorLayer({
-    //   source: vectorSource,
-    // });
 
     // create the map
     map = new Map({
@@ -78,6 +58,8 @@
         zoom: 16,
       }),
     });
+
+    vehicleLayer.on('postrender', renderVehicles)
 
 
     // put vehicle features on the layer
