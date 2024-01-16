@@ -20,7 +20,7 @@ impl StopDetector {
 }
 
 impl ProcessingStep for StopDetector {
-    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> (bool, Option<(String, Vec<u8>)>) {
+    fn apply(&mut self, vehicle: &mut Vehicle) -> (bool, Option<(String, Vec<u8>)>) {
         // we can only do anything if metadata is there
         if let Some(vehicle_metadata) = &mut vehicle.metadata {
             // we only deal with metros for now

@@ -60,7 +60,7 @@ impl InferenceFeatureExtractor {
 }
 
 impl ProcessingStep for InferenceFeatureExtractor {
-    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> (bool, Option<(String, Vec<u8>)>) {
+    fn apply(&mut self, vehicle: &mut Vehicle) -> (bool, Option<(String, Vec<u8>)>) {
         // get metadata if there
         if let Some(ref vehicle_metadata) = vehicle.metadata {
             // we only deal with metros
@@ -156,7 +156,7 @@ impl TrainingFeatureExtractor {
 }
 
 impl ProcessingStep for TrainingFeatureExtractor {
-    fn apply(&mut self, vehicle: &mut Vehicle, _low_watermark: u64) -> (bool, Option<(String, Vec<u8>)>) {
+    fn apply(&mut self, vehicle: &mut Vehicle) -> (bool, Option<(String, Vec<u8>)>) {
         // get metadata if there
         if let Some(ref vehicle_metadata) = vehicle.metadata {
             // we only deal with metros
