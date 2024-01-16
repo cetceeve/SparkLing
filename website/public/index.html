@@ -11,7 +11,9 @@
 </head>
 
 <body style="padding: 0; margin: 0">
-    <div id="map" style="height: 85vh;"></div>
+    <div id="map" style="height: 85vh;">
+        <canvas id="animation-canvas" style="position: absolute; z-index: 1000"></canvas>
+    </div>
     <div x-data class="container">
         <div>
             <div style="display: flex;flex-direction: row;justify-content: space-between;margin-top: 0.5em;">
@@ -52,7 +54,7 @@
         };
     </script>
     <script type="text/javascript" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script type="text/javascript" src="https://unpkg.com/leaflet-customlayer@2.1.0/dist/Leaflet.CustomLayer.js"></script>
+    <!-- <script type="text/javascript" src="https://unpkg.com/leaflet-customlayer@2.1.0/dist/Leaflet.CustomLayer.js"></script> -->
     <script type="text/javascript" src="./globals.js"></script>
     <script type="text/javascript" src="./util.js"></script>
     <script type="text/javascript" src="./map.js"></script>
@@ -61,5 +63,4 @@
     <script type="text/javascript" src="./eventsource.js"></script>
     <script type="text/javascript" src="./animation.js"></script>
 </body>
-
 </html>

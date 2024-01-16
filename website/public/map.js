@@ -3,7 +3,6 @@
         let map = L.map('map', {
             center:  [59.34563446044922, 18.071327209472656],
             zoom: 16,
-            renderer: L.canvas(),
             zoomControl: false,
         });
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {

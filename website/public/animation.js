@@ -4,24 +4,29 @@
 	// smooth animation only if zoomed in
 	let animateSmooth = map.getZoom() > smoothZoomLevel;
 	let mapIsMoving = false; // animation is paused during map movements
+	let mapIsZooming = false;
 
-	map.on("movestart", function() {
-		mapIsMoving = true;
-	})
+	// map.on("movestart", function() {
+	// 	mapIsMoving = true;
+	// });
 	map.on("zoomstart", function() {
-		mapIsMoving = true;
-	})
+		// mapIsMoving = true;
+		mapIsZooming = true;
+	});
 	map.on("zoomend", function() {
 		refreshVehiclesOnScreen()
-		mapIsMoving = false;
-		animateSmooth = this.getZoom() > smoothZoomLevel;
-		canvasLayer.animate();
-	})
+		// mapIsMoving = false;
+		// animateSmooth = this.getZoom() > smoothZoomLevel;
+		// animate();
+	});
+	map.on("zoom", function(e) {
+		
+	});
 	// update vehiclesOnScreen when the map moves
-	map.on('moveend', function(e) {
+	map.on("moveend", function(e) {
 		refreshVehiclesOnScreen()
-		mapIsMoving = false;
-		canvasLayer.animate();
+		// mapIsMoving = false;
+		// canvasLayer.animate();
 	});
 
 	// vehicle icons
@@ -49,42 +54,69 @@
 		"#8B8B8B": otherIcon,
 	}
 
-	// our custom canvasLayer, used to render vehicles
-	const canvasLayer = new L.CustomLayer({
-		container: document.createElement("canvas"),
-		maxZoom: 19,
+
+
+	let canvas = document.getElementById("animation-canvas");
+	function resize(mapSize) {
+		let size = mapSize.round();
+		canvas.style.width = `${size.x}px`;
+		canvas.style.height = `${size.y}px`;
+		canvas.width = size.x;
+		canvas.height = size.y;
+	}
+	map.on("resize", function(event) {
+		resize(event.newSize);
 	});
-	canvasLayer.animate = function() {
+
+
+
+
+	// our custom canvasLayer, used to render vehicles
+	// const canvasLayer = new L.CustomLayer({
+	// 	container: document.createElement("canvas"),
+	// 	maxZoom: 19,
+	// });
+	// const canvasLayer = L.BlanketOverlay({
+	// 	padding: 0,
+	// });
+	// canvasLayer._initContainer = function() {
+	// 	this._container = document.createElement("canvas");
+	// };
+	// canvasLayer._initContainer = function() {
+	// 	this._container.remove();
+	// 	delete this._container;
+	// };
+	// canvasLayer.animate = function() {
+	function animate() {
 		// frame function is called every frame
-		let layer = this;
+		// let layer = this;
 		let frameCounter = 0;
 		function frame(timestamp) {
 			if (mapIsMoving) {
 				return // pause animation when scrolling
 			}
 			if (animateSmooth || frameCounter % 60 == 0) {
-				let canvas = layer.getContainer();
 				let ctx = canvas.getContext("2d");
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 				// draw vehicles
-				let pointRadius = zoomToPointRadius(layer._map.getZoom());
+				let pointRadius = zoomToPointRadius(map.getZoom());
 				vehiclesOnScreen.forEach(function(vehicle, _, _) {
 					let point;
 					if (vehicle.animateUntil < timestamp) {
 						vehicle.animatedLatlng = null;
-						point = layer._map.latLngToContainerPoint(vehicle.realLatlng);
+						point = map.latLngToContainerPoint(vehicle.realLatlng);
 						vehicle.containerPoint = point;
 					} else {
 						let animationDuration = vehicle.animateUntil - vehicle.animationStart;
 						let remainingTime = vehicle.animateUntil - timestamp;
 						let percentDone = (animationDuration - remainingTime) / (animationDuration + 1);
-						let startPoint = layer._map.latLngToContainerPoint(vehicle.animationStartLatlng);
-						let endPoint = layer._map.latLngToContainerPoint(vehicle.realLatlng);
+						let startPoint = map.latLngToContainerPoint(vehicle.animationStartLatlng);
+						let endPoint = map.latLngToContainerPoint(vehicle.realLatlng);
 						point = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
 						vehicle.containerPoint = point;
 						if (animateSmooth) {
-							vehicle.animatedLatlng = layer._map.containerPointToLatLng(point);
+							vehicle.animatedLatlng = map.containerPointToLatLng(point);
 						} else {
 							vehicle.animatedLatlng = null;
 						}
@@ -138,7 +170,7 @@
 				}
 				// draw user location
 				if (userPosition) {
-					let point = layer._map.latLngToContainerPoint(userPosition.latlng);
+					let point = map.latLngToContainerPoint(userPosition.latlng);
 					ctx.fillStyle = "#24b6ff";
 					ctx.beginPath();
 					ctx.arc(point.x, point.y, 6, 0, 2*Math.PI);
@@ -155,15 +187,18 @@
 		}
 
 		// reset bounds and start the animation loop
-		let { ctx } = layer.setFullLayerBounds();
+		// let { ctx } = layer.setFullLayerBounds();
+		const ctx = canvas.getContext("2d");
 		ctx.font = "20px arial"
 		frame(performance.now());
 	}
 	// event handlers for our custom canvasLayer
-	canvasLayer.on("layer-mounted", function() {
-		this._reset();
-		this.animate();
-	});
+	// canvasLayer.on("layer-mounted", function() {
+	// 	this._reset();
+	// 	this.animate();
+	// });
 
-	canvasLayer.addTo(map);
+	// canvasLayer.addTo(map);
+
+	animate();
 }
