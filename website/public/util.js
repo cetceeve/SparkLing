@@ -29,11 +29,17 @@ function isOnScreen(vehicle, map) {
 }
 
 function zoomToPointRadius(zoom) {
-    let pointRadius = Math.max(1, zoom - 9);
-    if (pointRadius > 6) {
-        pointRadius += 5;
+    let pointRadius = Math.min(
+        16,
+        Math.pow(
+            1.5,
+            Math.max(0, zoom - 9)
+        )
+    );
+    if (zoom < clickableZoomLevel && pointRadius > 1) {
+        pointRadius -= 1;
     }
-    return pointRadius;
+    return Math.ceil(pointRadius);
 }
 
 function metersToPixels(meters, map) {

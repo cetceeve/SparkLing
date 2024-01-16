@@ -68,7 +68,8 @@
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 				// draw vehicles
-				let pointRadius = zoomToPointRadius(layer._map.getZoom());
+				let zoom = layer._map.getZoom();
+				let pointRadius = zoomToPointRadius(zoom);
 				vehiclesOnScreen.forEach(function(vehicle, _, _) {
 					let point;
 					if (vehicle.animateUntil < timestamp) {
@@ -91,7 +92,7 @@
 					}
 
 					// draw
-					if (pointRadius < 7) {
+					if (zoom < clickableZoomLevel) {
 						ctx.beginPath();
 						ctx.fillStyle = vehicle.color;
 						ctx.arc(point.x, point.y, pointRadius, 0, 2*Math.PI);
@@ -103,7 +104,7 @@
 				// highlight selected vehicle
 				if (selectedVehicle && vehiclesOnScreen.has(selectedVehicle.id)) {
 					// draw the vehicle again on top
-					if (pointRadius < 7) {
+					if (zoom < clickableZoomLevel) {
 						ctx.beginPath();
 						ctx.fillStyle = selectedVehicle.color;
 						ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius, 0, 2*Math.PI);
