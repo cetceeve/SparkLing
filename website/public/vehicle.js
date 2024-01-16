@@ -1,39 +1,85 @@
-function dataToDisplayText(data) {
-    let text;
-    if (!data.trip_id) {
-        text = "Ej i trafik";
-    } else if (!data.metadata) {
-        text = "Ingen information";
+// factory function that can fail if required data is missing
+function newVehicle(data) {
+    if (data.id && data.lat && data.lng && data.trip_id && data.route_type) {
+        return new Vehicle(data);
     } else {
-        text = "";
-        if (data.metadata.route_short_name) {
-            text += data.metadata.route_short_name;
+        return undefined;
+    }
+}
+
+class Vehicle {
+    constructor(data) {
+        this._assign(data);
+        this.color = routeTypeToColor(data.route_type);
+        this.initAnimationState();
+    }
+    updateData(data, onScreen) {
+        this._assign(data);
+        if ([this.lat, this.lng] !== this.animationEndLatlng) {
+            this.updateAnimationState(onScreen);
         }
-        if (data.metadata.route_long_name) {
+    }
+    _assign(data) {
+        for (const key of Object.keys(data)) {
+            const val = data[key];
+            if (val !== undefined) {
+                this[key] = val;
+            }
+        }
+    }
+    initAnimationState() {
+        let timestamp = performance.now();
+        this.animationStartLatlng = [this.lat, this.lng];
+        this.animationEndLatlng = this.animationStartLatlng;
+        this.animatedLatlng = this.animationStartLatlng;
+        this.animationStart = timestamp;
+        this.animateUntil = timestamp;
+    }
+    updateAnimationState(onScreen) {
+        let timestamp = performance.now();
+        let duration = timestamp - this.animationStart;
+        if (onScreen) {
+            if (this.animatedLatlng) {
+                this.animationStartLatlng = this.animatedLatlng;
+            } else {
+                this.animationStartLatlng = this.animationEndLatlng;
+            }
+        } else {
+            this.animationStartLatlng = this.animationEndLatlng;
+            this.animatedLatlng = null;
+        }
+        this.animationEndLatlng = [this.lat, this.lng];
+        this.animationStart = timestamp;
+        this.animateUntil = timestamp + duration * 1.5;
+    }
+    getDisplayText() {
+        let text = "";
+        if (this.route_short_name) {
+            text += this.route_short_name;
+        }
+        if (this.route_long_name) {
             if (text.length > 0) {
                 text += " "
             }
-            text += data.metadata.route_long_name;
+            text += this.route_long_name;
         }
-        if (data.metadata.trip_headsign) {
+        if (this.trip_headsign) {
             if (text.length > 0) {
                 text += " "
             }
-            text += "mot " + data.metadata.trip_headsign;
+            text += "mot " + this.trip_headsign;
         }
         if (text.length == 0) {
             text = "Ingen information";
         }
+        return text;
     }
-    return text;
 }
 
-function dataToColor(data) {
-    if (!data.metadata || !data.metadata.route_type) {
+function routeTypeToColor(routeType) {
+    if (!routeType) {
         return "#8B8B8B";
     }
-    let routeType = data.metadata.route_type;
-
     // train
     if (routeType < 400) {
         return "#FF7600";
@@ -60,47 +106,4 @@ function dataToColor(data) {
     }
     // other
     return "#8B8B8B";
-}
-
-class Vehicle {
-    constructor(data) {
-        this.id = data.id;
-        this.onTrip = data.trip_id ? true : false;
-        this.displayText = dataToDisplayText(data);
-        this.color = dataToColor(data);
-        let timestamp = performance.now();
-        this.realLatlng = [data.lat, data.lng];
-        this.animationStartLatlng = this.realLatlng;
-        this.animationStart = timestamp;
-        this.animateUntil = timestamp;
-        this.metadata = data.metadata;
-        this.delay = [];
-        this.firstPredictedSequence = 1000;
-    }
-    updateData(data, isOnScreen) {
-        if (data.delay) {
-            this.delay = data.delay;
-            this.firstPredictedSequence = data.first_predicted_sequence;
-            return
-        }
-        this.onTrip = data.trip_id ? true : false;
-        this.metadata = data.metadata;
-        this.displayText = dataToDisplayText(data);
-        this.color = dataToColor(data);
-        let timestamp = performance.now();
-        let duration = timestamp - this.animationStart;
-        if (isOnScreen) {
-            if (this.animatedLatlng) {
-                this.animationStartLatlng = this.animatedLatlng;
-            } else {
-                this.animationStartLatlng = this.realLatlng;
-            }
-        } else {
-            this.animationStartLatlng = this.realLatlng;
-            this.animatedLatlng = null;
-        }
-        this.realLatlng = [data.lat, data.lng];
-        this.animationStart = timestamp;
-        this.animateUntil = timestamp + duration * 1.5;
-    }
 }

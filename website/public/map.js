@@ -46,9 +46,7 @@
         });
         selectedVehicle = closestVehicle;
         if (selectedVehicle) {
-            if (selectedVehicle.onTrip) {
-                Alpine.store("selectedVehicle").update(selectedVehicle);
-            }
+            Alpine.store("selectedVehicle").update(selectedVehicle);
         }
     });
 }

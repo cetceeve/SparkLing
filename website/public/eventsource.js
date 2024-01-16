@@ -19,10 +19,12 @@ evtSource.onmessage = (event) => {
             Alpine.store("selectedVehicle").update(vehicle);
         }
     } else {
-        let vehicle = new Vehicle(data);
-        vehicleHM.set(vehicle.id, vehicle);
-        if (isOnScreen(vehicle, map)) {
-            vehiclesOnScreen.set(vehicle.id, vehicle);
+        let vehicle = newVehicle(data);
+        if (vehicle) {
+            vehicleHM.set(vehicle.id, vehicle);
+            if (isOnScreen(vehicle, map)) {
+                vehiclesOnScreen.set(vehicle.id, vehicle);
+            }
         }
     }
 };

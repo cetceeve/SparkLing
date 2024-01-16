@@ -11,7 +11,7 @@
 </head>
 
 <body style="padding: 0; margin: 0">
-    <div id="map" style="height: 85vh;"></div>
+    <div id="map" style="height: 90dvh;"></div>
     <div x-data class="container">
         <div>
             <div style="display: flex;flex-direction: row;justify-content: space-between;margin-top: 0.5em;">
@@ -30,7 +30,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <template x-data x-for="stop in $store.selectedVehicle.m.stops">
+                    <template x-data x-for="stop in $store.selectedVehicle.stops">
                         <tr>
                             <th scope="row" x-text="stop.stop_sequence"></th>
                             <td x-text="stop.stop_name"></td>
@@ -43,7 +43,7 @@
                 </tbody>
             </table>
         </figure>
-        <p x-text="$store.selectedVehicle.m.agency_name">Click on a vehicle.</p>
+        <p x-text="$store.selectedVehicle.agency_name">Click on a vehicle.</p>
     </div>
 
     <script>

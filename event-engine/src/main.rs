@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use tokio::sync::mpsc;
 use redis::AsyncCommands;
 
@@ -14,6 +15,38 @@ pub struct Vehicle {
     pub timestamp: u64,
     pub trip_id: Option<String>,
     pub metadata: Option<VehicleMetadata>,
+}
+
+impl Vehicle {
+    /// The serialization used for communication with the frontend
+    pub fn serialize_for_frontend(&self) -> Vec<u8> {
+        let mut map = Map::new();
+        map.insert("id".to_string(), Value::String(self.id.to_string()));
+        map.insert("lat".to_string(), Value::from(self.lat));
+        map.insert("lng".to_string(), Value::from(self.lng));
+        map.insert("trip_id".to_string(), Value::from(self.trip_id.clone()));
+        if let Some(m) = self.metadata.clone() {
+            if let Some(route_type) = m.route_type {
+                map.insert("route_type".to_string(), Value::from(route_type));
+            }
+            if let Some(agency_name) = m.agency_name {
+                map.insert("agency_name".to_string(), Value::from(agency_name));
+            }
+            if let Some(route_short_name) = m.route_short_name {
+                map.insert("route_short_name".to_string(), Value::from(route_short_name));
+            }
+            if let Some(route_long_name) = m.route_long_name {
+                map.insert("route_long_name".to_string(), Value::from(route_long_name));
+            }
+            if let Some(trip_headsign) = m.trip_headsign {
+                map.insert("trip_headsign".to_string(), Value::from(trip_headsign));
+            }
+            if let Some(stops) = m.stops {
+                map.insert("stops".to_string(), Value::from(stops));
+            }
+        }
+        serde_json::to_vec(&Value::Object(map)).unwrap()
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -43,6 +76,19 @@ pub struct Stop {
     pub shape_dist_traveled: f32,
 }
 
+/// Used for serialization to send to the frontend
+impl From<Stop> for Value {
+    fn from(value: Stop) -> Self {
+        let mut map = Map::new();
+        map.insert("stop_sequence".to_string(), Value::from(value.stop_sequence));
+        map.insert("stop_name".to_string(), Value::from(value.stop_name));
+        map.insert("stop_lon".to_string(), Value::from(value.stop_lon));
+        map.insert("stop_lat".to_string(), Value::from(value.stop_lat));
+        map.insert("arrival_time".to_string(), Value::from(value.arrival_time));
+        Value::Object(map)
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let (input_sender, input_receiver) = mpsc::unbounded_channel::<Vehicle>();
@@ -66,8 +112,8 @@ async fn main() {
     let mut redis_conn = redis_client.get_tokio_connection().await.unwrap();
 
     loop {
-        let item = output_receiver.recv().await.unwrap();
-        let serialized = serde_json::to_vec(&item).expect("Serialisation failed.");
+        let vehicle = output_receiver.recv().await.unwrap();
+        let serialized = vehicle.serialize_for_frontend();
         // TODO: can we not block the loop on each item?
         redis_conn.publish::<_,_,()>("realtime-with-metadata", serialized).await.unwrap();
     }
