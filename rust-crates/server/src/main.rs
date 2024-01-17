@@ -9,10 +9,12 @@ mod realtime;
 
 use trip_metadata::metadata_handler;
 use realtime::realtime_handler;
+use types::init_async_metadata_table;
 
 
 #[tokio::main]
 async fn main() {
+    init_async_metadata_table().await;
     let serve_dir = ServeDir::new("website/public")
         .not_found_service(ServeFile::new("website/public/index.html"));
 

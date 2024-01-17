@@ -9,8 +9,8 @@ use std::{collections::HashMap, io::Read};
 mod sync_table;
 mod async_table;
 
-pub use sync_table::get_trip_metadata_blocking;
-pub use async_table::get_trip_metadata_async;
+pub use sync_table::{get_trip_metadata_blocking, init_blocking_metadata_table};
+pub use async_table::{get_trip_metadata_async, init_async_metadata_table};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VehicleMetadata {

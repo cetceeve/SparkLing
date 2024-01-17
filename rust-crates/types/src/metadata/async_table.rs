@@ -29,6 +29,10 @@ async fn ensure_table() {
     }
 }
 
+pub async fn init_async_metadata_table() {
+    ensure_table().await;
+}
+
 pub async fn get_trip_metadata_async(trip_id: &str) -> Option<VehicleMetadata> {
     ensure_table().await;
     unsafe {

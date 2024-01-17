@@ -28,6 +28,10 @@ fn ensure_table() {
     }
 }
 
+pub fn init_blocking_metadata_table() {
+    ensure_table();
+}
+
 pub fn get_trip_metadata_blocking(trip_id: &str) -> Option<VehicleMetadata> {
     ensure_table();
     unsafe {

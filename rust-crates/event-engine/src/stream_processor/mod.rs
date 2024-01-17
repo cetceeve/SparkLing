@@ -35,7 +35,7 @@ impl StreamProcessor {
 
     pub async fn default() -> Self {
         let mut processor = Self::init();
-        processor.register_step(Box::new(MetadataJoiner::init().await));
+        processor.register_step(Box::new(MetadataJoiner::init()));
         processor.register_step(Box::new(StopDetector::init()));
         // processor.register_step(Box::new(TrainingFeatureExtractor::init()));
         processor.register_step(Box::new(InferenceFeatureExtractor::init()));

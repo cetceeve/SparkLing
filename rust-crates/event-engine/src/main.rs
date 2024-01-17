@@ -1,4 +1,4 @@
-use types::{Vehicle, VehicleMetadata};
+use types::{Vehicle, init_blocking_metadata_table};
 use tokio::sync::mpsc;
 use redis::AsyncCommands;
 
@@ -8,6 +8,7 @@ mod training_data_client;
 
 #[tokio::main]
 async fn main() {
+    init_blocking_metadata_table();
     let (input_sender, input_receiver) = mpsc::unbounded_channel::<Vehicle>();
     let (output_sender, mut output_receiver) = mpsc::unbounded_channel::<Vehicle>();
     let mut processor = stream_processor::StreamProcessor::default().await;
