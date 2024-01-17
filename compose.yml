@@ -17,10 +17,8 @@ services:
     container_name: event-engine
     image: jonathanarns/sparkling-event-engine
     build: 
-      context: ./event-engine 
-      dockerfile: ./Dockerfile
-    volumes:
-      - ./training-data:/training-data:Z
+      context: ./
+      dockerfile: ./event-engine.Dockerfile
     depends_on:
       - sparkling-redis
     networks:
@@ -31,18 +29,34 @@ services:
       - .env
     restart: on-failure
 
-  web:
-    container_name: web-app
-    image: jonathanarns/sparkling-app
-    build: ./website
+  web2:
+    container_name: server
+    image: jonathanarns/sparkling-server
+    build: 
+      context: ./
+      dockerfile: ./server.Dockerfile
     depends_on:
-      - event-engine
       - sparkling-redis
     ports:
       - "80:8080"
     networks:
       - sparkling-bridge
+    environment:
+      - RUST_BACKTRACE=1
     restart: on-failure
+
+  # web:
+  #   container_name: web-app
+  #   image: jonathanarns/sparkling-app
+  #   build: ./website
+  #   depends_on:
+  #     - event-engine
+  #     - sparkling-redis
+  #   ports:
+  #     - "80:8080"
+  #   networks:
+  #     - sparkling-bridge
+  #   restart: on-failure
 
   # feature-uploader:
   #   container_name: feature-uploader
@@ -56,17 +70,17 @@ services:
   #   networks:
   #     - sparkling-bridge
 
-  inference-pipeline:
-    container_name: inference-pipeline
-    image: fabianzeiher/sparkling-inference-pipeline
-    build: ./inference-pipeline
-    depends_on:
-      - event-engine
-      - sparkling-redis
-    env_file:
-      - .env
-    networks:
-      - sparkling-bridge
+  # inference-pipeline:
+  #   container_name: inference-pipeline
+  #   image: fabianzeiher/sparkling-inference-pipeline
+  #   build: ./inference-pipeline
+  #   depends_on:
+  #     - event-engine
+  #     - sparkling-redis
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - sparkling-bridge
   
   # rt-data-exporter:
   #   container_name: rt-data-exporter

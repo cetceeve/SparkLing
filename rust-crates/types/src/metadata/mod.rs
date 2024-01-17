@@ -1,13 +1,59 @@
-use crate::{Vehicle, VehicleMetadata, Stop};
 use anyhow::Result;
 use csv;
 use flate2::read::GzDecoder;
 use reqwest;
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, Map};
 use std::{collections::HashMap, io::Read};
 
+mod sync_table;
+mod async_table;
+
+pub use sync_table::get_trip_metadata_blocking;
+pub use async_table::get_trip_metadata_async;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct IntermediateVehicleMetadata {
+pub struct VehicleMetadata {
+    pub trip_id: String,
+    pub route_type: Option<u64>,
+    pub agency_name: Option<String>,
+    pub route_short_name: Option<String>,
+    pub route_long_name: Option<String>,
+    pub trip_headsign: Option<String>,
+    pub shape_id: Option<u64>,
+    pub route_id: Option<String>, // TODO: make some of these not optional
+    pub direction_id: Option<u8>,
+    pub stops: Option<Vec<Stop>>, // sorted by stop_sequence
+    pub real_stop_times: Option<Vec<Option<u64>>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Stop {
+    pub stop_sequence: u16,
+    pub stop_id: String,
+    pub stop_name: String,
+    pub arrival_time: String,
+    pub departure_time: String,
+    pub stop_lat: f32,
+    pub stop_lon: f32,
+    pub shape_dist_traveled: f32,
+}
+
+/// Used for serialization to send to the frontend
+impl From<Stop> for Value {
+    fn from(value: Stop) -> Self {
+        let mut map = Map::new();
+        map.insert("stop_sequence".to_string(), Value::from(value.stop_sequence));
+        map.insert("stop_name".to_string(), Value::from(value.stop_name));
+        map.insert("stop_lon".to_string(), Value::from(value.stop_lon));
+        map.insert("stop_lat".to_string(), Value::from(value.stop_lat));
+        map.insert("arrival_time".to_string(), Value::from(value.arrival_time));
+        Value::Object(map)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct IntermediateVehicleMetadata {
     pub trip_id: String,
     pub route_id: Option<String>,
     pub route_type: Option<u64>,
@@ -28,7 +74,7 @@ pub struct IntermediateVehicleMetadata {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DeserializedVehicleMetadata {
+struct DeserializedVehicleMetadata {
     pub trip_id: String,
     pub route_id: Option<String>,
     pub route_type: Option<u64>,
@@ -48,29 +94,39 @@ pub struct DeserializedVehicleMetadata {
     pub shape_dist_traveled: Option<Vec<f64>>,
 }
 
-use super::ProcessingStep;
-
-pub struct MetadataJoiner {
-    table: HashMap<String, VehicleMetadata>,
+pub fn download_metadata_table_blocking() -> Result<HashMap<String, VehicleMetadata>> {
+    let body =
+        reqwest::blocking::get("https://storage.googleapis.com/gtfs_static/sweden_aggregated_metadata.csv.gz")?
+            .bytes()?
+            .to_vec();
+    decode_table(body)
 }
 
-impl MetadataJoiner {
-    pub async fn init() -> Self {
-        Self {
-            table: download_table().await.unwrap(),
-        }
-    }
+pub async fn download_metadata_table_async() -> Result<HashMap<String, VehicleMetadata>> {
+    let body =
+        reqwest::get("https://storage.googleapis.com/gtfs_static/sweden_aggregated_metadata.csv.gz")
+            .await?
+            .bytes()
+            .await?
+            .to_vec();
+    decode_table(body)
 }
 
-impl ProcessingStep for MetadataJoiner {
-    fn apply(&mut self, vehicle: &mut Vehicle) -> (bool, Option<(String, Vec<u8>)>) {
-        if let Some(ref trip_id) = vehicle.trip_id {
-            vehicle.metadata = self.table.get(trip_id).map(|x| x.to_owned());
-            (true, None)
-        } else {
-            (false, None)
-        }
+fn decode_table(body: Vec<u8>) -> Result<HashMap<String, VehicleMetadata>> {
+    // Explisitly decompress the gziped body because there is no content-encoding: gzip header on the response
+    let mut buffer: Vec<u8> = Vec::default();
+    let mut decoder = GzDecoder::new(body.as_slice());
+    // Keep it as bytes since the csv reader deserializes from bytes anyway
+    decoder.read_to_end(&mut buffer)?;
+
+    let mut table = HashMap::<String, VehicleMetadata>::default();
+    for result in csv::Reader::from_reader(buffer.as_slice()).deserialize() {
+        let raw_item: IntermediateVehicleMetadata = result?;
+        let item = deserialize_stops(raw_item);
+        table.insert(item.trip_id.clone(), item);
     }
+    println!("Downloaded metadata table");
+    Ok(table)
 }
 
 fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
@@ -135,30 +191,4 @@ fn deserialize_stops(raw_item: IntermediateVehicleMetadata) -> VehicleMetadata {
         stops: if stop_ids.len() > 0 { Some(stops) } else { None },
         real_stop_times: None,
     }
-}
-
-async fn download_table() -> Result<HashMap<String, VehicleMetadata>> {
-    let body =
-        reqwest::get("https://storage.googleapis.com/gtfs_static/sweden_aggregated_metadata.csv.gz")
-            .await?
-            .bytes()
-            .await?
-            .to_vec();
-
-    // Explisitly decompress the gziped body because there is no content-encoding: gzip header on the response
-    let mut buffer: Vec<u8> = Vec::default();
-    let mut decoder = GzDecoder::new(body.as_slice());
-    // Keep it as bytes since the csv reader deserializes from bytes anyway
-    decoder.read_to_end(&mut buffer)?;
-
-    let mut table = HashMap::<String, VehicleMetadata>::default();
-    for result in csv::Reader::from_reader(buffer.as_slice()).deserialize() {
-        let raw_item: IntermediateVehicleMetadata = result?;
-        // println!("{:?}", raw_item);
-        let item = deserialize_stops(raw_item);
-        // print!("{:?}", item);
-        table.insert(item.trip_id.clone(), item);
-    }
-    println!("Downloaded metadata table");
-    Ok(table)
 }
