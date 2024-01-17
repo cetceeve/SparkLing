@@ -9,8 +9,12 @@ static mut LAST_UPDATED: Option<Mutex<SystemTime>> = None;
 async fn ensure_table() {
     unsafe {
         if let None = TABLE {
-            TABLE = Some(RwLock::new(download_metadata_table_async().await.unwrap()));
             LAST_UPDATED = Some(Mutex::new(SystemTime::now()));
+            TABLE = Some(RwLock::new(Default::default()));
+            if let Some(ref table) = TABLE {
+                let mut lock = table.write().await;
+                *lock = download_metadata_table_async().await.unwrap();
+            }
         } else {
             if let Some(ref last_updated) = LAST_UPDATED {
                 let mut ts = last_updated.lock().await;
