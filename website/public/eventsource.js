@@ -28,9 +28,3 @@ evtSource.onmessage = (event) => {
         }
     }
 };
-
-function getMetadata(trip_id) {
-    fetch(window.location.origin + "/trip_metadata/" + trip_id)
-        .then((resp) => resp.json())
-        .then((json) => console.log(json));
-}

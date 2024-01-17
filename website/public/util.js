@@ -61,3 +61,9 @@ function refreshVehiclesOnScreen() {
     });
     vehiclesOnScreen = newVehiclesOnScreen;
 }
+
+async function getMetadata(trip_id) {
+    let resp = await fetch(window.location.origin + "/trip_metadata/" + trip_id);
+    let metadata = await resp.json();
+    return metadata;
+}

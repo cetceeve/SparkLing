@@ -27,7 +27,7 @@
             accuracy: e.accuracy,
         };
     });
-    map.on("click", function(e) {
+    map.on("click", async function(e) {
         let zoom = this.getZoom()
         if (zoom < clickableZoomLevel) {
             selectedVehicle = undefined;
@@ -46,6 +46,13 @@
         });
         selectedVehicle = closestVehicle;
         if (selectedVehicle) {
+            Alpine.store("selectedVehicle").update(selectedVehicle);
+        }
+        // fetch metadata if it is not there yet
+        if (selectedVehicle?.trip_id && !selectedVehicle?.stops) {
+            let vehicle = selectedVehicle;
+            let metadata = await getMetadata(vehicle.trip_id);
+            vehicle.updateData(metadata);
             Alpine.store("selectedVehicle").update(selectedVehicle);
         }
     });

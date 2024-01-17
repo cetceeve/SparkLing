@@ -24,21 +24,6 @@ impl Vehicle {
             if let Some(route_type) = m.route_type {
                 map.insert("route_type".to_string(), Value::from(route_type));
             }
-            if let Some(agency_name) = m.agency_name {
-                map.insert("agency_name".to_string(), Value::from(agency_name));
-            }
-            if let Some(route_short_name) = m.route_short_name {
-                map.insert("route_short_name".to_string(), Value::from(route_short_name));
-            }
-            if let Some(route_long_name) = m.route_long_name {
-                map.insert("route_long_name".to_string(), Value::from(route_long_name));
-            }
-            if let Some(trip_headsign) = m.trip_headsign {
-                map.insert("trip_headsign".to_string(), Value::from(trip_headsign));
-            }
-            if let Some(stops) = m.stops {
-                map.insert("stops".to_string(), Value::from(stops));
-            }
         }
         serde_json::to_vec(&Value::Object(map)).unwrap()
     }
