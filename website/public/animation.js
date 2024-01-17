@@ -62,7 +62,8 @@
 			if (mapIsMoving) {
 				return // pause animation when scrolling
 			}
-			if (animateSmooth || frameCounter % 60 == 0) {
+			// smooth animation is every 2 frames, slow is every 60 frames
+			if (animateSmooth && frameCounter % 2 == 0 || frameCounter % 60 == 0) {
 				let canvas = layer.getContainer();
 				let ctx = canvas.getContext("2d");
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
