@@ -15,7 +15,7 @@ class Vehicle {
     }
     updateData(data, onScreen) {
         this._assign(data);
-        if ([this.lat, this.lng] !== this.animationEndLatlng) {
+        if (this.lat !== this.animationEndLatlng[0] || this.lng !== this.animationEndLatlng[1]) {
             this.updateAnimationState(onScreen);
         }
     }
