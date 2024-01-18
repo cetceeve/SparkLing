@@ -15,8 +15,8 @@ use types::init_async_metadata_table;
 #[tokio::main]
 async fn main() {
     init_async_metadata_table().await;
-    let serve_dir = ServeDir::new("website/public")
-        .not_found_service(ServeFile::new("website/public/index.html"));
+    let serve_dir = ServeDir::new("website/")
+        .not_found_service(ServeFile::new("website/index.html"));
 
     let router = Router::new()
         .route("/realtime", get(realtime_handler))

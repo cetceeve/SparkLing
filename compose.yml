@@ -29,7 +29,7 @@ services:
       - .env
     restart: on-failure
 
-  web2:
+  web:
     container_name: server
     image: jonathanarns/sparkling-server
     build: 
@@ -44,19 +44,6 @@ services:
     environment:
       - RUST_BACKTRACE=1
     restart: on-failure
-
-  # web:
-  #   container_name: web-app
-  #   image: jonathanarns/sparkling-app
-  #   build: ./website
-  #   depends_on:
-  #     - event-engine
-  #     - sparkling-redis
-  #   ports:
-  #     - "80:8080"
-  #   networks:
-  #     - sparkling-bridge
-  #   restart: on-failure
 
   # feature-uploader:
   #   container_name: feature-uploader
