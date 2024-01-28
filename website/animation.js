@@ -62,7 +62,8 @@
 			if (mapIsMoving) {
 				return // pause animation when scrolling
 			}
-			if (animateSmooth || frameCounter % 60 == 0) {
+			// smooth animation is every 2 frames, slow is every 60 frames
+			if (animateSmooth && frameCounter % 2 == 0 || frameCounter % 60 == 0) {
 				let canvas = layer.getContainer();
 				let ctx = canvas.getContext("2d");
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -74,14 +75,14 @@
 					let point;
 					if (vehicle.animateUntil < timestamp) {
 						vehicle.animatedLatlng = null;
-						point = layer._map.latLngToContainerPoint(vehicle.realLatlng);
+						point = layer._map.latLngToContainerPoint(vehicle.animationEndLatlng);
 						vehicle.containerPoint = point;
 					} else {
 						let animationDuration = vehicle.animateUntil - vehicle.animationStart;
 						let remainingTime = vehicle.animateUntil - timestamp;
 						let percentDone = (animationDuration - remainingTime) / (animationDuration + 1);
 						let startPoint = layer._map.latLngToContainerPoint(vehicle.animationStartLatlng);
-						let endPoint = layer._map.latLngToContainerPoint(vehicle.realLatlng);
+						let endPoint = layer._map.latLngToContainerPoint(vehicle.animationEndLatlng);
 						point = endPoint.multiplyBy(percentDone).add(startPoint.multiplyBy(1 - percentDone));
 						vehicle.containerPoint = point;
 						if (animateSmooth) {
@@ -119,7 +120,8 @@
 					ctx.arc(selectedVehicle.containerPoint.x, selectedVehicle.containerPoint.y, pointRadius+1, 0, 2*Math.PI);
 					ctx.stroke();
 					// draw textbox
-					let textMetrics = ctx.measureText(selectedVehicle.displayText);
+					let displayText = selectedVehicle.getDisplayText();
+					let textMetrics = ctx.measureText(displayText);
 					let textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
 					let textWidth = textMetrics.actualBoundingBoxLeft + textMetrics.actualBoundingBoxRight;
 					let textLeft = selectedVehicle.containerPoint.x + 3;
@@ -135,7 +137,7 @@
 					ctx.rect(textLeft-2, textTop-2, textWidth+5, textHeight+5);
 					ctx.stroke();
 					ctx.fillStyle = "black";
-					ctx.fillText(selectedVehicle.displayText, textLeft, textBottom);
+					ctx.fillText(displayText, textLeft, textBottom);
 				}
 				// draw user location
 				if (userPosition) {

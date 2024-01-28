@@ -1,17 +1,17 @@
 function checkBounds(vehicle, eastBound, westBound, northBound, southBound) {
     return (
         (
-            (vehicle.realLatlng[0] < northBound && vehicle.realLatlng[0] > southBound)
+            (vehicle.animationEndLatlng[0] < northBound && vehicle.animationEndLatlng[0] > southBound)
             || (vehicle.animationStartLatlng[0] < northBound && vehicle.animationStartLatlng[0] > southBound)
         ) && (
             (
                 eastBound < westBound && (
-                    (vehicle.realLatlng[1] > eastBound && vehicle.realLatlng[1] < westBound)
+                    (vehicle.animationEndLatlng[1] > eastBound && vehicle.animationEndLatlng[1] < westBound)
                     || (vehicle.animationStartLatlng[1] > eastBound && vehicle.animationStartLatlng[1] < westBound)
                 )
             ) || (
                 eastBound > westBound && (
-                    (vehicle.realLatlng[1] < eastBound && vehicle.realLatlng[1] > westBound)
+                    (vehicle.animationEndLatlng[1] < eastBound && vehicle.animationEndLatlng[1] > westBound)
                     || (vehicle.animationStartLatlng[1] < eastBound && vehicle.animationStartLatlng[1] > westBound)
                 )
             )
@@ -60,4 +60,10 @@ function refreshVehiclesOnScreen() {
         }
     });
     vehiclesOnScreen = newVehiclesOnScreen;
+}
+
+async function getMetadata(trip_id) {
+    let resp = await fetch(window.location.origin + "/trip_metadata/" + trip_id);
+    let metadata = await resp.json();
+    return metadata;
 }
