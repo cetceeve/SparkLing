@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use async_trait::async_trait;
 
-use chrono::{FixedOffset, TimeDelta, TimeZone, Timelike, Utc};
+use chrono::{Local, TimeDelta, TimeZone, Timelike};
 use tokio::sync::Mutex;
 use types::{redis_util::{redis_set, redis_get}, Vehicle, VehicleMetadata};
 
@@ -38,7 +38,7 @@ impl ProcessingStep for DelayProcessor {
                 self.number_of_stops.lock().await.insert(trip_id.clone(), stops.len());
                 let key = String::from("delays:") + &trip_id;
                 let delays = redis_get::<Vec<i32>>(&key).await.unwrap_or_else(|_| vec![0; stops.len()]);
-                let now = FixedOffset::east_opt(3600).unwrap().from_utc_datetime(&Utc::now().naive_utc());
+                let now = Local::now();
                 let mut stop_time = now.clone();
                 let mut reached_previous = true;
                 for (i, stop) in stops.iter().enumerate() {

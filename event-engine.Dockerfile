@@ -27,5 +27,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,id="reg-${TARGETPLATFORM
 # our final base
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN rm -f /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 COPY --from=build /workspace/bin/event-engine /usr/local/bin/event-engine
 CMD event-engine
